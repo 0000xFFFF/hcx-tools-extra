@@ -90,7 +90,7 @@ def main():
 
     except KeyboardInterrupt:
         print("\nScript interrupted by user. Exiting gracefully...")
-        exit(0
+        exit(0)
 
 if __name__ == "__main__":
     main()
