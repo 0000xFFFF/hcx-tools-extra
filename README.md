@@ -14,6 +14,7 @@ Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and 
 * [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
 ### Requirements - pip
+* psutil
 * colorama
 * tabulate
 * scapy

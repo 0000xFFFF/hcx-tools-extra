@@ -1,3 +1,4 @@
+psutil
 tabulate
 colorama
 scapy
