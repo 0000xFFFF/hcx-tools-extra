@@ -86,18 +86,13 @@ hcx-genlst -lut123 -s steve
 ```
 
 ## Reacon after cracking
+
+### Nearby
 ```
 hcx-wifi            - airodump-ng clone written in python that shows you passwords of
                       nearby networks you have cracked with hashcat
 hcx-wifi-genpasslst - generate password csv list for hcx-wifi
 ```
-### GeoLocate bssids in hashes
-First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
-```
-hcx-hashesabgl hashes.txt | tee out.txt - get bssid locations in bulk from Apple's
-                                          servers and output to stdout & out.txt file
-```
-Use the **leaflet_bulk_geolocator.html** from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show **out.txt** locations on a map.
 
 #### Examples:
 ```
@@ -116,6 +111,13 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 ...
 ```
 
+### GeoLocate bssids in hashes
+First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
+```
+hcx-hashesabgl hashes.txt | tee out.txt - get bssid locations in bulk from Apple's
+                                          servers and output to stdout & out.txt file
+```
+Use the **leaflet_bulk_geolocator.html** from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show **out.txt** locations on a map.
 
 
 ## Scripts for maindb.txt
