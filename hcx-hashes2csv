@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+
+import sys
+
+if len(sys.argv) <= 1:
+    print("ABOUT: hashes to csv")
+    print("USAGE: " + sys.argv[0] + " <hashesFile>")
+    exit()
+
+with open(sys.argv[1], "r") as file1:
+    lines1 = [line.strip() for line in file1 if line.strip()]
+
+
+def hex2str(hex_string):
+    try:
+        return bytes.fromhex(hex_string).decode("utf-8")
+    except ValueError:
+        return "HEX ERROR"
+
+
+def line2info(line):
+    split = line.split("*")
+    hash_id = split[2]
+    hash_id, bssid, mac, essid = split[2], split[3], split[4], hex2str(split[5])
+    return [hash_id, bssid, mac, essid]
+
+
+for line in lines1:
+    print(",".join(line2info(line)))

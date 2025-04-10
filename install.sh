@@ -10,6 +10,7 @@ sudo ln -sfr hcx-genlst-hswifi-preall /usr/local/bin/.
 sudo ln -sfr hcx-genlst-num8 /usr/local/bin/.
 sudo ln -sfr hcx-genlst-numcommon /usr/local/bin/.
 sudo ln -sfr hcx-genlst-upper8 /usr/local/bin/.
+sudo ln -sfr hcx-hashes2csv /usr/local/bin/.
 sudo ln -sfr hcx-info /usr/local/bin/.
 sudo ln -sfr hcx-names /usr/local/bin/.
 sudo ln -sfr hcx-new /usr/local/bin/.
