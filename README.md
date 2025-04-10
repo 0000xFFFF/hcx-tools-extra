@@ -111,7 +111,7 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 ...
 ```
 
-### GeoLocate bssids in hashes
+### Bulk GeoLocate BSSIDs in hashes
 First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
 ```
 hcx-hashesabgl hashes.txt | tee out.txt - get bssid locations in bulk from Apple's
