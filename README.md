@@ -97,7 +97,7 @@ First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
 hcx-hashesabgl hashes.txt | tee out.txt - get bssid locations in bulk from Apple's
                                           servers and output to stdout & out.txt file
 ```
-Use the *leaflet_bulk_geolocator.html* from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show *out.txt* locations on a map.
+Use the **leaflet_bulk_geolocator.html** from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show **out.txt** locations on a map.
 
 #### Examples:
 ```
@@ -119,7 +119,7 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 
 
 ## Scripts for maindb.txt
-Create a *maindb.txt* file that stores the full path of your file that contains all your hashes.
+Create a **maindb.txt** file that stores the full path of your file that contains all your hashes.
 ```
 hcx-cap   - extract info from newly captured cap/pcapng files
 hcx-new   - get newly captured hashes that are not in main hashes db
