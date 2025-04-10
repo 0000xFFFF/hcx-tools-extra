@@ -1,2 +1,5 @@
 #!/bin/bash
-hcx-rmhashes "$1" /media/SSD/root/dump/cap/all/all.txt
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
+
+hcx-rmhashes "$1" "$MAINDB"

@@ -25,8 +25,8 @@ hashcat -m 22000 --left "all_uniq.txt" > hashcat_uncracked.txt
 hcx-uniq hashcat_uncracked.txt > left.txt
 hcx-rmhashes apuniq.txt left.txt > cracked.txt
 
-# set your txt file where you store all your hashes here
-MAINDB="/media/SSD/root/dump/cap/all/all.txt"
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
 if [ -f "$MAINDB" ]; then
         hcx-rmhashes left.txt "$MAINDB" > new.txt
 fi

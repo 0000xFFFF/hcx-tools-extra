@@ -3,8 +3,11 @@
 SEARCH="$1"
 WRITE="$2"
 
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
+
 if [ -z "$WRITE" ]; then
-        hcx-info /media/SSD/root/dump/cap/all/apuniq.txt -s 5 | grep -i "$SEARCH"
+        hcx-info "$MAINDB" -s 5 | grep -i "$SEARCH"
 else
-        hcx-info /media/SSD/root/dump/cap/all/apuniq.txt -g "$SEARCH" >> fetch.txt
+        hcx-info "$MAINDB" -g "$SEARCH" >> fetch.txt
 fi
