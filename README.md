@@ -28,17 +28,17 @@ This will just `ln -sfr <scripts> /usr/local/bin/.`, some scripts depend on each
 
 ## Processing hashes
 ```sh
-hcx-info hashes.txt    # display a nice table for hashes in file
-                       # (MACs, BSSIDs, ESSIDs, passwords, vendor info, ...)
-                       # fetches passwords from hashcat if any cracked hashes detected,
-                       # display vendor info with -v for all macs...
-hcx-cracker hashes.txt # crack wifi passwords by using their essids
-hcx-potfile            # display a nice table for all hashcat passwords in potfile
+hcx-info <hashes.txt>    # display a nice table for hashes in file
+                         # (MACs, BSSIDs, ESSIDs, passwords, vendor info, ...)
+                         # fetches passwords from hashcat if any cracked hashes detected,
+                         # display vendor info with -v for all macs...
+hcx-cracker <hashes.txt> # crack wifi passwords by using their essids
+hcx-potfile              # display a nice table for all hashcat passwords in potfile
 ```
 
 #### Examples:
 ```sh
-./hcx-info hashes.txt
+./hcx-info <hashes.txt>
 ```
 ```
 #  TYPE   HASH             MAC AP        MAC CLIENT    ESSID             PASSWORD   
@@ -50,18 +50,18 @@ hcx-potfile            # display a nice table for all hashcat passwords in potfi
 
 ##### crack wifi passwords by using their essids
 ```sh
-./hcx-cracker hashes.txt -ab    # generates gen and run scripts
-./gen.sh                        # generates wordlists by network ESSID for each network
-./run.sh                        # runs hashcat with generated wordlists
+./hcx-cracker <hashes.txt> -ab    # generates gen and run scripts
+./gen.sh                          # generates wordlists by network ESSID for each network
+./run.sh                          # runs hashcat with generated wordlists
 ```
 
 ## Capturing hashes with raspberry pi and hcxdumptool
 ```sh
-hcx-rpidump                     # small script that starts hcxdumptool when wlan1
-                                # device is connected to raspberry pi
-hcx-rpidump-install             # make systemd service and start it
-hcx-rpidump-filtergen "<BSSID>" # filter your own network from attack
-hcx-rpidump-wmenu               # rasberry pi waveshare menu for starting hcxdumptool
+hcx-rpidump                   # small script that starts hcxdumptool when wlan1
+                              # device is connected to raspberry pi
+hcx-rpidump-install           # make systemd service and start it
+hcx-rpidump-filtergen <BSSID> # filter your own network from attack
+hcx-rpidump-wmenu             # rasberry pi waveshare menu for starting hcxdumptool
 ```
 
 ## Generate password wordlists for cracking
@@ -98,8 +98,8 @@ hcx-wifi-genpasslst # generate password csv list for hcx-wifi
 
 #### Examples:
 ```sh
-./hcx-wifi-genpasslst hashes.txt > passlst.csv
-./hcx-wifi wlan1mon passlst.csv
+./hcx-wifi-genpasslst <hashes.txt> > <passlst.csv>
+./hcx-wifi wlan1mon <passlst.csv>
 ```
 ```
 CH  4 | 2024-09-07 22:46:13.812907 | COUNT: 21 | PASS: 10 (3) | SORT BY: ↓ PWR
@@ -116,8 +116,8 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 ### Bulk GeoLocate BSSIDs in hashes
 First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
 ```sh
-hcx-hashesabgl hashes.txt | tee out.txt # get bssid locations in bulk from Apple's
-                                        # servers and output to stdout & out.txt file
+hcx-hashesabgl <hashes.txt> | tee <out.txt> # get bssid locations in bulk from Apple's
+                                            # servers and output to stdout & out.txt file
 ```
 Use the **leaflet_bulk_geolocator.html** from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show **out.txt** locations on a map.
 
