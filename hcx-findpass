@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SEARCH="$1"
 grep "$SEARCH" ~/.vip/lists/wlst/commonfirst/*

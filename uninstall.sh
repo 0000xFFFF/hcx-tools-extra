@@ -1,4 +1,5 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
+set -x
 sudo rm /usr/local/bin/hcx-cap 
 sudo rm /usr/local/bin/hcx-cracker
 sudo rm /usr/local/bin/hcx-fetch

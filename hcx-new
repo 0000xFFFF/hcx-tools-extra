@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
 

@@ -1,4 +1,5 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
+set -x
 sudo ln -sfr hcx-cap /usr/local/bin/.
 sudo ln -sfr hcx-cracker /usr/local/bin/.
 sudo ln -sfr hcx-fetch /usr/local/bin/.

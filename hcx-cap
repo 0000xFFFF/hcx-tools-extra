@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ABOUT: extract all info from *.cap *.pcapng files with hcxpcapngtool
 
