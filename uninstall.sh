@@ -17,9 +17,12 @@ sudo rm /usr/local/bin/hcx-info
 sudo rm /usr/local/bin/hcx-names
 sudo rm /usr/local/bin/hcx-new
 sudo rm /usr/local/bin/hcx-potfile
-sudo rm /usr/local/bin/hcx-rpidump
-sudo rm /usr/local/bin/hcx-rpidump-wmenu
 sudo rm /usr/local/bin/hcx-rmhashes
+sudo rm /usr/local/bin/hcx-rpidump
+sudo rm /usr/local/bin/hcx-rpidump-filtergen
+sudo rm /usr/local/bin/hcx-rpidump-filtergen2
+sudo rm /usr/local/bin/hcx-rpidump-install
+sudo rm /usr/local/bin/hcx-rpidump-wmenu
 sudo rm /usr/local/bin/hcx-status
 sudo rm /usr/local/bin/hcx-uniq
 sudo rm /usr/local/bin/hcx-wifi
