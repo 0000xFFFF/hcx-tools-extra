@@ -38,7 +38,7 @@ hcx-potfile              # display a nice table for all hashcat passwords in pot
 
 #### Examples:
 ```sh
-./hcx-info <hashes.txt>
+hcx-info <hashes.txt>
 ```
 ```
 #  TYPE   HASH             MAC AP        MAC CLIENT    ESSID             PASSWORD   
@@ -50,9 +50,9 @@ hcx-potfile              # display a nice table for all hashcat passwords in pot
 
 ##### crack wifi passwords by using their essids
 ```sh
-./hcx-cracker <hashes.txt> -ab    # generates gen and run scripts
-./gen.sh                          # generates wordlists by network ESSID for each network
-./run.sh                          # runs hashcat with generated wordlists
+hcx-cracker <hashes.txt> -ab    # generates gen and run scripts
+./gen.sh                        # generates wordlists by network ESSID for each network
+./run.sh                        # runs hashcat with generated wordlists
 ```
 
 ## Capturing hashes with raspberry pi and hcxdumptool
@@ -100,8 +100,8 @@ hcx-wifi-genpasslst # generate password csv list for hcx-wifi
 
 #### Examples:
 ```sh
-./hcx-wifi-genpasslst <hashes.txt> > <passlst.csv>
-./hcx-wifi wlan1mon <passlst.csv>
+hcx-wifi-genpasslst <hashes.txt> > <passlst.csv>
+hcx-wifi wlan1mon <passlst.csv>
 ```
 ```
 CH  4 | 2024-09-07 22:46:13.812907 | COUNT: 21 | PASS: 10 (3) | SORT BY: ↓ PWR
