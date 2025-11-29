@@ -12,7 +12,7 @@ sudo rm /usr/local/bin/hcx-genlst-num8
 sudo rm /usr/local/bin/hcx-genlst-numcommon
 sudo rm /usr/local/bin/hcx-genlst-upper8
 sudo rm /usr/local/bin/hcx-hashes2csv
-sudo rm /usr/local/bin/hcx-hashesabgl
+sudo rm /usr/local/bin/hcx-abgl
 sudo rm /usr/local/bin/hcx-info
 sudo rm /usr/local/bin/hcx-names
 sudo rm /usr/local/bin/hcx-new

@@ -4,31 +4,9 @@
 
 Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and passwords.
 
-## Installation
-
-### Requirements
-* python
-* [hashcat](https://github.com/hashcat/hashcat)
-* [hcxtools](https://github.com/ZerBea/hcxtools)
-* [hcxdumptool](https://github.com/ZerBea/hcxdumptool)
-* [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
-
-### Requirements - pip
-* psutil
-* colorama
-* tabulate
-* scapy
-* getkey
-
-### Run before usage
-```sh
-./install.sh
-```
-This will just `ln -sfr <scripts> /usr/local/bin/.`, some scripts depend on each other...
-
 ## Processing hashes
 ```sh
-hcx-info <hashes.txt>    # display a nice table for hashes in file
+hcx-info <hashes.txt>    # display a nice table for hashes dumped from hcxpcapngtool
                          # (MACs, BSSIDs, ESSIDs, passwords, vendor info, ...)
                          # fetches passwords from hashcat if any cracked hashes detected,
                          # display vendor info with -v for all macs...
@@ -36,7 +14,7 @@ hcx-cracker <hashes.txt> # crack wifi passwords by using their essids
 hcx-potfile              # display a nice table for all hashcat passwords in potfile
 ```
 
-#### Examples:
+### Examples:
 ```sh
 hcx-info <hashes.txt>
 ```
@@ -48,7 +26,7 @@ hcx-info <hashes.txt>
 ...
 ```
 
-##### crack wifi passwords by using their essids
+### crack wifi passwords by using their essids
 ```sh
 hcx-cracker <hashes.txt> -ab    # generates gen and run scripts
 ./gen.sh                        # generates wordlists by network ESSID for each network
@@ -76,7 +54,7 @@ hcx-genlst-numcommon # common numbers (dates, etc.)
 hcx-genlst-upper8    # generate upper ascii with length 8
 ```
 
-#### Examples:
+### Examples:
 ```sh
 hcx-genlst -lut123 -s steve
 # will generate a wordlist that has passwords like: steve66, 123Steve, 69STEVE69, ...
@@ -98,7 +76,7 @@ hcx-wifi            # airodump-ng clone written in python that shows you passwor
 hcx-wifi-genpasslst # generate password csv list for hcx-wifi
 ```
 
-#### Examples:
+### Examples:
 ```sh
 hcx-wifi-genpasslst <hashes.txt> > <passlst.csv>
 hcx-wifi wlan1mon <passlst.csv>
@@ -118,8 +96,8 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 ### Bulk GeoLocate BSSIDs in hashes
 First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
 ```sh
-hcx-hashesabgl <hashes.txt> | tee <out.txt> # get bssid locations in bulk from Apple's
-                                            # servers and output to stdout & out.txt file
+hcx-abgl <hashes.txt> | tee <out.txt> # get bssid locations in bulk from Apple's
+                                      # servers and output to stdout & out.txt file
 ```
 Use the **leaflet_bulk_geolocator.html** from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show **out.txt** locations on a map.
 
@@ -131,6 +109,33 @@ hcx-cap   # extract info from newly captured cap/pcapng files
 hcx-new   # get newly captured hashes that are not in main hashes db
 hcx-fetch # grep hcx-info for main hashes db
 ```
+
+## Installation
+
+### Requirements
+* python
+* [hashcat](https://github.com/hashcat/hashcat)
+* [hcxtools](https://github.com/ZerBea/hcxtools)
+* [hcxdumptool](https://github.com/ZerBea/hcxdumptool)
+* [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
+
+### Requirements - pip
+* psutil
+* colorama
+* tabulate
+* scapy
+* getkey
+
+### Run before usage
+```sh
+./install.sh
+```
+This will just `ln -sfr <scripts> /usr/local/bin/.`, some scripts depend on each other...
+
+## Misc
+For more information about a specific script,
+I usually put a comment in the head of the script.
+Also read the code, the scripts are pretty simple.
 
 ## Disclaimer
 The hcx-scripts are intended for educational purposes only.

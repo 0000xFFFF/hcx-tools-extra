@@ -12,7 +12,7 @@ sudo ln -sfr tools/hcx-genlst-num8 /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst-numcommon /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst-upper8 /usr/local/bin/.
 sudo ln -sfr tools/hcx-hashes2csv /usr/local/bin/.
-sudo ln -sfr tools/hcx-hashesabgl /usr/local/bin/.
+sudo ln -sfr tools/hcx-abgl /usr/local/bin/.
 sudo ln -sfr tools/hcx-info /usr/local/bin/.
 sudo ln -sfr tools/hcx-names /usr/local/bin/.
 sudo ln -sfr tools/hcx-new /usr/local/bin/.
