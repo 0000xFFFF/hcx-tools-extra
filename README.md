@@ -62,7 +62,9 @@ hcx-rpidump                   # small script that starts hcxdumptool when wlan1
 hcx-rpidump-install           # make systemd service and start it
 hcx-rpidump-filtergen <BSSID> # filter your own network from attack
 hcx-rpidump-wmenu             # rasberry pi waveshare menu for starting hcxdumptool
+hcx-status                    # print current unique hashes (by bssid) in cwd
 ```
+
 
 ## Generate password wordlists for cracking
 Use the newer version: [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# this script monitors all .pcapng files in the current working directory
+# and only runs hcxpcapngtool when their size changes.
+# from hcxpcapngtool's output it extracts and prints unique AP hashes (unique BSSIDs)
+
 import os
 import subprocess
 import time
