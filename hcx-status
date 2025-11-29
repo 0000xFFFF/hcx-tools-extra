@@ -6,16 +6,28 @@ import time
 import tempfile
 from contextlib import contextmanager
 
-# Temporary file context manager
 @contextmanager
-def temporary_file(suffix='', prefix='temp', dir=None):
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix=prefix, dir=dir)
+def temporary_file(suffix="", prefix="temp", dir=None):
+    temp_file = tempfile.NamedTemporaryFile(
+        delete=False, suffix=suffix, prefix=prefix, dir=dir
+    )
     try:
         yield temp_file.name
     finally:
         saferm(temp_file.name)
 
-# Safe file removal function
+
+def get_pcapng_total_size():
+    total = 0
+    for f in os.listdir("."):
+        if f.endswith(".pcapng"):
+            try:
+                total += os.path.getsize(f)
+            except:
+                pass
+    return total
+
+
 def saferm(file_path):
     try:
         os.remove(file_path)
@@ -26,14 +38,14 @@ def saferm(file_path):
     except Exception as e:
         print(f"Error removing file {file_path}: {e}")
 
-# Hex to string conversion
+
 def hex2str(hex_string):
     try:
-        return bytes.fromhex(hex_string).decode('utf-8')
+        return bytes.fromhex(hex_string).decode("utf-8")
     except ValueError:
         return "HEX ERROR"
 
-# Extract and print information from a line
+
 def process_line(line, seen_bssids, counter):
     split = line.split("*")
     if len(split) < 6:
@@ -53,38 +65,47 @@ def process_line(line, seen_bssids, counter):
 
     return counter
 
+
 def main():
     seen_bssids = set()
     counter = 0
 
+    last_size = get_pcapng_total_size()
+
     try:
         while True:
-            with temporary_file(suffix='.txt') as hash_file:
-                # Run the external command to generate the hash file
-                try:
-                    subprocess.run(
-                        f"hcxpcapngtool *.pcapng -o {hash_file}",
-                        shell=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.STDOUT,
-                        check=True
-                    )
-                except subprocess.CalledProcessError as e:
-                    print(f"Error running hcxpcapngtool: {e}")
-                    time.sleep(1)
-                    continue
+            # Check if total size of all pcapng files changed
+            # Run hcxpcapngtool only when pcapng changed
+            current_size = get_pcapng_total_size()
 
-                # Read and process the hash file
-                try:
-                    with open(hash_file, 'r') as f:
-                        lines = [line.strip() for line in f]
-                        for line in lines:
-                            if line:
-                                counter = process_line(line, seen_bssids, counter)
-                except FileNotFoundError:
-                    print(f"Hash file not found: {hash_file}")
-                except Exception as e:
-                    print(f"Error reading hash file: {e}")
+            if current_size != last_size:
+                last_size = current_size
+
+                with temporary_file(suffix=".txt") as hash_file:
+                    try:
+                        subprocess.run(
+                            f"hcxpcapngtool *.pcapng -o {hash_file}",
+                            shell=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.STDOUT,
+                            check=True,
+                        )
+                    except subprocess.CalledProcessError as e:
+                        print(f"Error running hcxpcapngtool: {e}")
+                        time.sleep(1)
+                        continue
+
+                    # Process output
+                    try:
+                        with open(hash_file, "r") as f:
+                            lines = [line.strip() for line in f]
+                            for line in lines:
+                                if line:
+                                    counter = process_line(line, seen_bssids, counter)
+                    except FileNotFoundError:
+                        print(f"Hash file not found: {hash_file}")
+                    except Exception as e:
+                        print(f"Error reading hash file: {e}")
 
             time.sleep(1)
 
@@ -92,6 +113,6 @@ def main():
         print("\nScript interrupted by user. Exiting gracefully...")
         exit(0)
 
+
 if __name__ == "__main__":
     main()
-
