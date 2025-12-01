@@ -74,7 +74,7 @@ def main():
     seen_bssids = set()
     counter = 0
 
-    last_size = get_pcapng_total_size()
+    last_size = 0
 
     try:
         while True:
