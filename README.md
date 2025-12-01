@@ -1,8 +1,6 @@
 # hcx-scripts
-
-[![Python 3.12.5](https://img.shields.io/badge/Python-3.12.5-yellow.svg)](http://www.python.org/download/)
-
-Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and passwords.
+Useful tools for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and passwords.
+Written in C, python, bash.
 
 ## Processing hashes
 ```sh
@@ -113,29 +111,21 @@ hcx-fetch # grep hcx-info for main hashes db
 ## Installation
 
 ### Requirements
-* python
+* bash
+* gcc
+* make
+* python (pip: psutil colorama tabulate scapy getkey)
 * [hashcat](https://github.com/hashcat/hashcat)
 * [hcxtools](https://github.com/ZerBea/hcxtools)
 * [hcxdumptool](https://github.com/ZerBea/hcxdumptool)
 * [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
-### Requirements - pip
-* psutil
-* colorama
-* tabulate
-* scapy
-* getkey
-
 ### Run before usage
 ```sh
+./build.sh
 ./install.sh
 ```
-This will just `ln -sfr <scripts> /usr/local/bin/.`, some scripts depend on each other...
-
-## Misc
-For more information about a specific script,
-I usually put a comment in the head of the script.
-Also read the code, the scripts are pretty simple.
+This will just `ln -sfr <tools> /usr/local/bin/.`, some tools depend on each other...
 
 ## Disclaimer
 The hcx-scripts are intended for educational purposes only.
