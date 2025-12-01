@@ -194,7 +194,9 @@ int main(int argc, char* argv[])
                     "USAGE: %s [-v] [-p]\n"
                     "  -v, --vendor    Show vendor information\n"
                     "  -p, --password  Show cracked passwords from hashcat\n"
-                    "* requires: hcxpcapngtool",
+                    "\n"
+                    "\n"
+                    "* requires: hcxpcapngtool\n",
                     argv[0]);
             return 0;
         }
