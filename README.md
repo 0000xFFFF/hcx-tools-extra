@@ -1,4 +1,4 @@
-# hcx-scripts
+# hcx-tools-extra (formerly hcx-scripts)
 Useful tools for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and passwords.
 Written in C, python, bash.
 
