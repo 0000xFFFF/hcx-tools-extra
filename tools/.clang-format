@@ -1,0 +1,25 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 0
+BreakBeforeBraces: Stroustrup
+AllowShortIfStatementsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+BinPackArguments: true  # Keep function arguments together if they fit
+BinPackParameters: true  # Keep function parameters together if they fit
+AllowAllArgumentsOnNextLine: false  # Don't force arguments onto new lines
+NamespaceIndentation: All  # Indents contents inside a namespace
+PointerAlignment: Left
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: false
+AllowShortCaseExpressionOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+IndentCaseBlocks: true
+IndentCaseLabels: true
+AlignConsecutiveMacros: true

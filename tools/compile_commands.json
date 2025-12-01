@@ -1,0 +1,32 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-g",
+      "-D",
+      "DEBUG",
+      "-o",
+      "hcx-info",
+      "src/hcx-info.c"
+    ],
+    "directory": "/home/user/Downloads/hcx-tools-extra",
+    "file": "/home/user/Downloads/hcx-tools-extra/src/hcx-info.c",
+    "output": "/home/user/Downloads/hcx-tools-extra/hcx-info"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-g",
+      "-D",
+      "DEBUG",
+      "-o",
+      "hcx-info",
+      "src/utils.c"
+    ],
+    "directory": "/home/user/Downloads/hcx-tools-extra",
+    "file": "/home/user/Downloads/hcx-tools-extra/src/utils.c",
+    "output": "/home/user/Downloads/hcx-tools-extra/hcx-info"
+  }
+]
