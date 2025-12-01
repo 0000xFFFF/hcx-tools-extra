@@ -14,8 +14,8 @@ int sort_column;
 
 int compare_items(const void* a, const void* b)
 {
-    struct HashItem* ia = (struct HashItem*)a;
-    struct HashItem* ib = (struct HashItem*)b;
+    const struct HashItem* ia = (const struct HashItem*)a;
+    const struct HashItem* ib = (const struct HashItem*)b;
 
     switch (sort_column) {
         case 0:  return ia->num - ib->num;
@@ -32,7 +32,7 @@ int compare_items(const void* a, const void* b)
 }
 
 // Print table with dynamic column widths
-void print_table(struct HashItem* items, int count, bool nocolor)
+static void print_table(struct HashItem* items, size_t count, bool nocolor)
 {
     const char* headers[] = {"#", "TYPE", "HASH", "MAC AP", "MAC CLIENT", "ESSID", "PASSWORD", "VENDOR AP", "VENDOR CLIENT"};
     const int num_cols = 9;
@@ -44,8 +44,8 @@ void print_table(struct HashItem* items, int count, bool nocolor)
     }
 
     // Calculate maximum width needed for each column
-    for (int i = 0; i < count; i++) {
-        char num_str[16];
+    for (size_t i = 0; i < count; i++) {
+        char num_str[32];
         snprintf(num_str, sizeof(num_str), "%d", items[i].num);
 
         size_t col_widths[9] = {
@@ -83,7 +83,7 @@ void print_table(struct HashItem* items, int count, bool nocolor)
     printf("\n");
 
     // Print data rows
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         char num_str[16];
         snprintf(num_str, sizeof(num_str), "%d", items[i].num);
 
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 
     // use hashitem as a dynm array
     struct HashItem* items = malloc(10000 * sizeof(struct HashItem));
-    int count = 0, capacity = 10000;
+    size_t count = 0, capacity = 10000;
     char line[MAX_LINE];
     char line_original[MAX_LINE];
 
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
         }
 
         struct HashItem* item = &items[count++];
-        item->num = count;
+        item->num = (int)count;
 
         if (strcmp(parts[1], "01") == 0)
             strcpy(item->type, "PMKID");

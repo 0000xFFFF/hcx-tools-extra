@@ -23,10 +23,10 @@ struct PotArgs {
 
 int sort_column;
 
-int compare_pot_items(const void* a, const void* b)
+static int compare_pot_items(const void* a, const void* b)
 {
-    struct PotItem* ia = (struct PotItem*)a;
-    struct PotItem* ib = (struct PotItem*)b;
+    const struct PotItem* ia = (const struct PotItem*)a;
+    const struct PotItem* ib = (const struct PotItem*)b;
 
     switch (sort_column) {
         case 0:  return ia->num - ib->num;
@@ -37,7 +37,7 @@ int compare_pot_items(const void* a, const void* b)
     }
 }
 
-void print_pot_table(struct PotItem* items, int count, bool nocolor)
+static void print_pot_table(struct PotItem* items, size_t count, bool nocolor)
 {
     const char* headers[] = {"#", "HASHCAT ID", "ESSID", "PASSWORD"};
     const int num_cols = 4;
@@ -49,8 +49,8 @@ void print_pot_table(struct PotItem* items, int count, bool nocolor)
     }
 
     // Calculate maximum width needed for each column
-    for (int i = 0; i < count; i++) {
-        char num_str[16];
+    for (size_t i = 0; i < count; i++) {
+        char num_str[32];
         snprintf(num_str, sizeof(num_str), "%d", items[i].num);
 
         size_t col_widths[4] = {
@@ -83,7 +83,7 @@ void print_pot_table(struct PotItem* items, int count, bool nocolor)
     printf("\n");
 
     // Print data rows
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         char num_str[16];
         snprintf(num_str, sizeof(num_str), "%d", items[i].num);
 
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
 
     // Parse full potfile for table display
     struct PotItem* items = malloc(10000 * sizeof(struct PotItem));
-    int count = 0, capacity = 10000;
+    size_t count = 0, capacity = 10000;
     char line[MAX_LINE];
 
     while (fgets(line, sizeof(line), f)) {
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
         }
 
         struct PotItem* item = &items[count];
-        item->num = count;
+        item->num = (int)count;
 
         strncpy(item->hash, hash_part, sizeof(item->hash) - 1);
         item->hash[sizeof(item->hash) - 1] = 0;

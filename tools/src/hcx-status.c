@@ -14,7 +14,7 @@
 static volatile bool running = true;
 
 // Signal handler for graceful exit
-void sigint_handler(int sig)
+static void sigint_handler(int sig)
 {
     (void)sig;
     running = false;
@@ -22,7 +22,7 @@ void sigint_handler(int sig)
 }
 
 // Get total size of all .pcapng files in current directory
-long get_pcapng_total_size(void)
+static long get_pcapng_total_size(void)
 {
     DIR* dir = opendir(".");
     if (!dir) {
@@ -48,7 +48,7 @@ long get_pcapng_total_size(void)
 }
 
 // Create temporary file and return its name in provided buffer
-bool create_temp_file(char* buffer, size_t size)
+static bool create_temp_file(char* buffer, size_t size)
 {
     snprintf(buffer, size, "/tmp/hcx_monitor_XXXXXX.txt");
     int fd = mkstemps(buffer, 4); // 4 = length of ".txt"
@@ -61,7 +61,7 @@ bool create_temp_file(char* buffer, size_t size)
 }
 
 // Safe file removal
-void saferm(const char* file_path)
+static void saferm(const char* file_path)
 {
     if (unlink(file_path) != 0) {
         if (errno == ENOENT) {
@@ -77,7 +77,7 @@ void saferm(const char* file_path)
 }
 
 // Process a single hash line
-int process_line(const char* line, struct HashTable* seen_bssids, int* counter, struct HashTable* hashcat, struct VendorTable* vendors)
+static int process_line(const char* line, struct HashTable* seen_bssids, int* counter, struct HashTable* hashcat, struct VendorTable* vendors)
 {
     if (!line || line[0] == '\n' || line[0] == 0) { return 0; }
 
@@ -125,12 +125,12 @@ int process_line(const char* line, struct HashTable* seen_bssids, int* counter, 
     // Convert BSSID to uppercase
     strncpy(bssid, parts[3], sizeof(bssid) - 1);
     bssid[sizeof(bssid) - 1] = 0;
-    for (char* c = bssid; *c; c++) { *c = toupper(*c); }
+    for (char* c = bssid; *c; c++) { *c = (char)toupper(*c); }
 
     // Convert MAC to uppercase
     strncpy(mac, parts[4], sizeof(mac) - 1);
     mac[sizeof(mac) - 1] = 0;
-    for (char* c = mac; *c; c++) { *c = toupper(*c); }
+    for (char* c = mac; *c; c++) { *c = (char)toupper(*c); }
 
     // Convert hex ESSID to string
     hex2str(parts[5], essid, sizeof(essid), false);

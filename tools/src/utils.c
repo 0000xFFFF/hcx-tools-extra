@@ -35,7 +35,7 @@ struct HashTable* ht_create(size_t size)
 // Insert into hash table
 void ht_insert(struct HashTable* ht, const char* key, const char* value)
 {
-    uint32_t idx = hash_fnv1a(key) % ht->size;
+    uint32_t idx = (uint32_t)(hash_fnv1a(key) % ht->size);
     struct HTNode* node = malloc(sizeof(struct HTNode));
     node->key = strdup(key);
     node->value = strdup(value);
@@ -47,7 +47,7 @@ void ht_insert(struct HashTable* ht, const char* key, const char* value)
 // Get from hash table
 const char* ht_get(struct HashTable* ht, const char* key)
 {
-    uint32_t idx = hash_fnv1a(key) % ht->size;
+    uint32_t idx = (uint32_t)(hash_fnv1a(key) % ht->size);
     struct HTNode* node = ht->buckets[idx];
     while (node) {
         if (strcmp(node->key, key) == 0) return node->value;
@@ -116,7 +116,7 @@ struct VendorTable* load_vendors(const char* ieee_oui)
         char* nl = strchr(vendor, '\n');
         if (nl) *nl = 0;
 
-        uint32_t idx = hash_fnv1a(line) % vt->size;
+        uint32_t idx = (uint32_t)(hash_fnv1a(line) % vt->size);
         struct HTNode* node = malloc(sizeof(struct HTNode));
         node->key = strdup(line);
         node->value = strdup(vendor);
@@ -130,7 +130,7 @@ struct VendorTable* load_vendors(const char* ieee_oui)
 // Load vendor database from binary's directory path, look for "mac2ven.lst"
 struct VendorTable* load_vendors_bin_dir()
 {
-    char bin_dir[PATH_MAX];
+    char bin_dir[PATH_MAX - 32];
     binary_directory(bin_dir, sizeof(bin_dir));
     char mac2ven_list_path[PATH_MAX];
     snprintf(mac2ven_list_path, sizeof(mac2ven_list_path), "%s/mac2ven.lst", bin_dir);
@@ -149,12 +149,12 @@ void mac2ven(const char* mac, char* out, size_t out_size, struct VendorTable* vt
     int j = 0;
     for (int i = 0; mac[i] && j < 6; i++) {
         if (mac[i] != ':' && mac[i] != '-') {
-            prefix[j++] = toupper(mac[i]);
+            prefix[j++] = (char)toupper(mac[i]);
         }
     }
     prefix[j] = 0;
 
-    uint32_t idx = hash_fnv1a(prefix) % vt->size;
+    uint32_t idx = (uint32_t)(hash_fnv1a(prefix) % vt->size);
     struct HTNode* node = vt->buckets[idx];
     while (node) {
         if (strcmp(node->key, prefix) == 0) {
@@ -220,11 +220,11 @@ const char* istrstr(const char* haystack, const char* needle)
 }
 
 // Calculate display width for a string (visible characters only, ignoring ANSI codes)
-int utf8_display_width(const char* s)
+size_t utf8_display_width(const char* s)
 {
     mbstate_t ps = {0};
     wchar_t wc;
-    int width = 0;
+    size_t width = 0;
 
     const char* p = s;
 
@@ -252,7 +252,7 @@ int utf8_display_width(const char* s)
         }
 
         int w = wcwidth(wc);
-        if (w > 0) width += w;
+        if (w > 0) width += (size_t)w;
         p += n;
     }
 

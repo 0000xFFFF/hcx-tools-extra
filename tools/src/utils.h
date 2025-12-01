@@ -71,5 +71,5 @@ extern void mac2ven(const char* mac, char* out, size_t out_size, struct VendorTa
 extern struct HashTable* load_hashcat(const char* filename);
 extern const char* istrstr(const char* haystack, const char* needle);
 extern int compare_items(const void* a, const void* b);
-extern int utf8_display_width(const char* s);
+extern size_t utf8_display_width(const char* s);
 extern char* binary_directory(char* path, size_t size);
