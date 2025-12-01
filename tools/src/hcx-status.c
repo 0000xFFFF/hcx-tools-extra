@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
 
             fprintf(stderr,
-                    "ABOUT: Watches .pcapng files in cwd and if they update print unique AP hashes"
+                    "ABOUT: Watches .pcapng files in cwd and if they update print unique AP hashes\n"
                     "USAGE: %s [-v] [-p]\n"
                     "  -v, --vendor    Show vendor information\n"
                     "  -p, --password  Show cracked passwords from hashcat\n"
