@@ -32,3 +32,5 @@ install:
 
 clean:
 	rm hcx-info
+	rm hcx-potfile
+	rm hcx-status
