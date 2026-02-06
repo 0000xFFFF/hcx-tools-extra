@@ -74,27 +74,19 @@ void ht_free(struct HashTable* ht)
 }
 
 // Convert hex to string
-void hex2str(const char* hex, char* out, size_t out_size, bool nocolor)
+void hex2str(const char* hex, char* out, size_t outsz, bool nocolor)
 {
-    size_t len = strlen(hex);
-    if (len % 2 != 0 || len == 0) {
-        snprintf(out, out_size, "%s", nocolor ? "HEX ERROR" : COLOR_RED "HEX ERROR" COLOR_RESET);
-        return;
+    size_t len = strlen(hex) / 2;
+    if (len >= outsz)
+        len = outsz - 1;
+
+    for (size_t i = 0; i < len; ++i) {
+        unsigned int b;
+        sscanf(hex + 2 * i, "%2x", &b);
+        out[i] = (char)b;
     }
 
-    size_t j = 0;
-    for (size_t i = 0; i < len && j < out_size - 1; i += 2) {
-        char byte_str[3] = {hex[i], hex[i + 1], 0};
-        unsigned int byte;
-        if (sscanf(byte_str, "%2x", &byte) != 1) {
-            snprintf(out, out_size, "%s", nocolor ? "HEX ERROR" : COLOR_RED "HEX ERROR" COLOR_RESET);
-            return;
-        }
-        if (byte >= 32 && byte <= 126) {
-            out[j++] = (char)byte;
-        }
-    }
-    out[j] = 0;
+    out[len] = '\0';
 }
 
 // Load vendor database
