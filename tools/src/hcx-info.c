@@ -8,6 +8,20 @@
 #include <string.h>
 #include <wchar.h>
 
+static void print_pad(int n)
+{
+    for (int i = 0; i < n; ++i)
+        putchar(' ');
+}
+
+static void print_cell(const char* s, int width)
+{
+    int w = utf8_display_width(s);
+    fputs(s, stdout);
+    if (w < width)
+        print_pad(width - w);
+}
+
 // Compare function for qsort
 int (*cmp_func)(const void*, const void*);
 int sort_column;
@@ -87,39 +101,46 @@ static void print_table(struct HashItem* items, size_t count, bool nocolor)
         char num_str[16];
         snprintf(num_str, sizeof(num_str), "%d", items[i].num);
 
-        if (nocolor) {
-            printf("%-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s\n",
-                   (int)widths[0], num_str,
-                   (int)widths[1], items[i].type,
-                   (int)widths[2], items[i].hashid,
-                   (int)widths[3], items[i].bssid,
-                   (int)widths[4], items[i].mac,
-                   (int)widths[5], items[i].essid,
-                   (int)widths[6], items[i].passwd,
-                   (int)widths[7], items[i].vendor_ap,
-                   (int)widths[8], items[i].vendor_client);
-        }
-        else {
-            // clang-format off
-            printf(COLOR_YELLOW   "%-*s"       COLOR_RESET "  "
-                   COLOR_GREEN    "%-*s  %-*s" COLOR_RESET "  "
-                   COLOR_MAGENTA  "%-*s"       COLOR_RESET "  "
-                   COLOR_BLUE     "%-*s"       COLOR_RESET "  "
-                   COLOR_RESET    "%-*s"       COLOR_RESET "  "
-                   COLOR_RED      "%-*s"       COLOR_RESET "  "
-                   COLOR_MAGENTA  "%-*s"       COLOR_RESET "  "
-                   COLOR_BLUE     "%-*s"       COLOR_RESET "\n",
-                   (int)widths[0], num_str,
-                   (int)widths[1], items[i].type,
-                   (int)widths[2], items[i].hashid,
-                   (int)widths[3], items[i].bssid,
-                   (int)widths[4], items[i].mac,
-                   (int)widths[5], items[i].essid,
-                   (int)widths[6], items[i].passwd,
-                   (int)widths[7], items[i].vendor_ap,
-                   (int)widths[8], items[i].vendor_client);
-            // clang-format on
-        }
+        if (!nocolor) printf(COLOR_YELLOW);
+        print_cell(num_str, widths[0]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        if (!nocolor) printf(COLOR_GREEN);
+        print_cell(items[i].type, widths[1]);
+        printf("  ");
+        print_cell(items[i].hashid, widths[2]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        if (!nocolor) printf(COLOR_MAGENTA);
+        print_cell(items[i].bssid, widths[3]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        if (!nocolor) printf(COLOR_BLUE);
+        print_cell(items[i].mac, widths[4]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        /* UTF-8 columns */
+        print_cell(items[i].essid, widths[5]);
+        printf("  ");
+
+        if (!nocolor) printf(COLOR_RED);
+        print_cell(items[i].passwd, widths[6]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        if (!nocolor) printf(COLOR_MAGENTA);
+        print_cell(items[i].vendor_ap, widths[7]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        if (!nocolor) printf(COLOR_BLUE);
+        print_cell(items[i].vendor_client, widths[8]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("\n");
     }
 }
 int main(int argc, char* argv[])
