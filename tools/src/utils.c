@@ -214,37 +214,38 @@ const char* istrstr(const char* haystack, const char* needle)
 // Calculate display width for a string (visible characters only, ignoring ANSI codes)
 size_t utf8_display_width(const char* s)
 {
-    mbstate_t ps = {0};
-    wchar_t wc;
     size_t width = 0;
-
     const char* p = s;
 
     while (*p) {
-        // skip ANSI escape sequences (e.g., "\033[31m")
-        if (*p == '\033') {
-            if (*(p + 1) == '[') {
-                p += 2;
-                while (*p && (*p < '@' || *p > '~')) // skip until letter ending sequence
-                    p++;
-                if (*p) p++; // skip final letter
-                continue;
-            }
+
+        /* skip ANSI escape sequences */
+        if (*p == '\033' && *(p + 1) == '[') {
+            p += 2;
+            while (*p && (*p < '@' || *p > '~'))
+                p++;
+            if (*p) p++;
+            continue;
         }
 
-        // convert next multibyte character
+        wchar_t wc;
+        mbstate_t ps = {0}; // reset EVERY char
+
         size_t n = mbrtowc(&wc, p, MB_CUR_MAX, &ps);
+
         if (n == (size_t)-1 || n == (size_t)-2) {
-            // invalid UTF-8, skip a byte
+            /* invalid UTF-8 → treat as single byte */
+            width++;
             p++;
             continue;
         }
-        else if (n == 0) {
+
+        if (n == 0)
             break;
-        }
 
         int w = wcwidth(wc);
-        if (w > 0) width += (size_t)w;
+        width += (w > 0 ? w : 0);
+
         p += n;
     }
 
