@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import subprocess
+from colorama import Fore, Back, Style
+from tabulate import tabulate
+from operator import itemgetter
+import argparse
+
+# Argument parsing
+parser = argparse.ArgumentParser(description='Print a table for WPA-PBKDF2-PMKID+EAPOL hashes/passwords in hashcat potfile')
+parser.add_argument('-s', '--sort', metavar='clm_num', type=int, help="sort output by column")
+parser.add_argument('-p', '--passonly', action='store_true', help="only print passwords from potfile")
+parser.add_argument('-c', '--nocolor', action='store_true', help="dont't use colors when printing")
+parser.add_argument('-i', '--input', metavar='potfile', type=str, help="manually specify potfile path")
+args = parser.parse_args()
+
+potfile_path = os.path.expanduser('~') + "/.local/share/hashcat/hashcat.potfile"
+if args.input: potfile_path = args.input
+
+def hex2str(string):
+    try:
+        hex_bytes = bytes.fromhex(string)
+        utf8_string = hex_bytes.decode('utf-8')
+        return utf8_string
+    except: return "HEX ERROR"
+
+with open(potfile_path, 'r') as file:
+    potfile_lines = file.read().splitlines()
+
+if args.passonly:
+    for i in potfile_lines:
+        print(i.replace("\n", "").split(":")[1])
+else:
+    psks = []
+    for i, line in enumerate(potfile_lines):
+        if not line: continue
+        split_star = line.split("*")
+        if len(split_star) != 2: continue
+        hash = split_star[0]
+        split_colon = split_star[1].split(":")
+        essid_hex = split_colon[0]
+        psk = split_colon[1]
+        essid = hex2str(essid_hex)
+
+        if args.nocolor:
+            psks.append([str(i),hash,essid,psk])
+        else:
+            clr_num   = Style.NORMAL + Fore.YELLOW + str(i) + Style.RESET_ALL
+            clr_hash  = Style.NORMAL + Fore.GREEN  + hash   + Style.RESET_ALL
+            clr_essid = Style.NORMAL + Fore.BLUE   + essid  + Style.RESET_ALL
+            clr_psk   = Style.NORMAL + Fore.RED    + psk    + Style.RESET_ALL
+            psks.append([clr_num,clr_hash,clr_essid,clr_psk])
+
+    if args.sort is not None: psks = sorted(psks, key=itemgetter(args.sort))
+
+    print(tabulate(psks, headers=["#", "HASHCAT ID", "ESSID", "PASSWORD"]))

@@ -28,3 +28,7 @@ sudo ln -sfr tools/hcx-uniq /usr/local/bin/.
 sudo ln -sfr tools/hcx-wifi /usr/local/bin/.
 sudo ln -sfr tools/hcx-wifi-genpasslst /usr/local/bin/.
 sudo ln -sfr tools/hcx-wifi-maconly /usr/local/bin/.
+
+sudo ln -sfr old/hcx-info /usr/local/bin/hcx-info-old
+sudo ln -sfr old/hcx-potfile /usr/local/bin/hcx-potfile-old
+sudo ln -sfr old/hcx-status /usr/local/bin/hcx-status-old
