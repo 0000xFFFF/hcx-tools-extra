@@ -87,24 +87,31 @@ static void print_pot_table(struct PotItem* items, size_t count, bool nocolor)
         char num_str[16];
         snprintf(num_str, sizeof(num_str), "%d", items[i].num);
 
-        if (nocolor) {
-            printf("%-*s  %-*s  %-*s  %-*s\n",
-                   (int)widths[0], num_str,
-                   (int)widths[1], items[i].hash,
-                   (int)widths[2], items[i].essid,
-                   (int)widths[3], items[i].password);
-        }
-        else {
-            printf(COLOR_YELLOW "%-*s" COLOR_RESET
-                                "  " COLOR_GREEN "%-*s" COLOR_RESET
-                                "  " COLOR_BLUE "%-*s" COLOR_RESET
-                                "  " COLOR_RED "%-*s" COLOR_RESET
-                                "\n",
-                   (int)widths[0], num_str,
-                   (int)widths[1], items[i].hash,
-                   (int)widths[2], items[i].essid,
-                   (int)widths[3], items[i].password);
-        }
+        // Column 0: number
+        if (!nocolor) printf(COLOR_YELLOW);
+        print_cell(num_str, widths[0]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        // Column 1: hash
+        if (!nocolor) printf(COLOR_GREEN);
+        print_cell(items[i].hash, widths[1]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        // Column 2: ESSID (UTF-8 safe)
+        if (!nocolor) printf(COLOR_BLUE);
+        print_cell(items[i].essid, widths[2]);
+        if (!nocolor) printf(COLOR_RESET);
+        printf("  ");
+
+        // Column 3: password (UTF-8 safe)
+        if (!nocolor) printf(COLOR_RED);
+        print_cell(items[i].password, widths[3]);
+        if (!nocolor) printf(COLOR_RESET);
+
+        // End of row
+        printf("\n");
     }
 }
 
