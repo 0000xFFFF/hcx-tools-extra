@@ -1,0 +1,5 @@
+argparse
+colorama
+tabulate
+scapy
+getkey
