@@ -263,3 +263,17 @@ char* binary_directory(char* path, size_t size)
     path[len] = '\0';     // Null-terminate the string
     return dirname(path); // Extract directory part
 }
+
+void print_pad(int n)
+{
+    for (int i = 0; i < n; ++i)
+        putchar(' ');
+}
+
+void print_cell(const char* s, int width)
+{
+    int w = utf8_display_width(s);
+    fputs(s, stdout);
+    if (w < width)
+        print_pad(width - w);
+}

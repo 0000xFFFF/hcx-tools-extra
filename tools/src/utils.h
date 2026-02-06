@@ -73,3 +73,5 @@ extern const char* istrstr(const char* haystack, const char* needle);
 extern int compare_items(const void* a, const void* b);
 extern size_t utf8_display_width(const char* s);
 extern char* binary_directory(char* path, size_t size);
+extern void print_pad(int n);
+extern void print_cell(const char* s, int width);

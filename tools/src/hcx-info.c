@@ -8,19 +8,6 @@
 #include <string.h>
 #include <wchar.h>
 
-static void print_pad(int n)
-{
-    for (int i = 0; i < n; ++i)
-        putchar(' ');
-}
-
-static void print_cell(const char* s, int width)
-{
-    int w = utf8_display_width(s);
-    fputs(s, stdout);
-    if (w < width)
-        print_pad(width - w);
-}
 
 // Compare function for qsort
 int (*cmp_func)(const void*, const void*);
