@@ -74,7 +74,7 @@ void ht_free(struct HashTable* ht)
 }
 
 // Convert hex to string
-void hex2str(const char* hex, char* out, size_t outsz, bool nocolor)
+void hex2str(const char* hex, char* out, size_t outsz)
 {
     size_t len = strlen(hex) / 2;
     if (len >= outsz)
@@ -244,7 +244,7 @@ size_t utf8_display_width(const char* s)
             break;
 
         int w = wcwidth(wc);
-        width += (w > 0 ? w : 0);
+        width += (size_t)(w > 0 ? w : 0);
 
         p += n;
     }
@@ -265,15 +265,15 @@ char* binary_directory(char* path, size_t size)
     return dirname(path); // Extract directory part
 }
 
-void print_pad(int n)
+void print_pad(size_t n)
 {
-    for (int i = 0; i < n; ++i)
+    for (size_t i = 0; i < n; ++i)
         putchar(' ');
 }
 
-void print_cell(const char* s, int width)
+void print_cell(const char* s, size_t width)
 {
-    int w = utf8_display_width(s);
+    size_t w = utf8_display_width(s);
     fputs(s, stdout);
     if (w < width)
         print_pad(width - w);

@@ -133,7 +133,7 @@ static int process_line(const char* line, struct HashTable* seen_bssids, int* co
     for (char* c = mac; *c; c++) { *c = (char)toupper(*c); }
 
     // Convert hex ESSID to string
-    hex2str(parts[5], essid, sizeof(essid), false);
+    hex2str(parts[5], essid, sizeof(essid));
 
     // Get password from hashcat if available
     if (hashcat) {

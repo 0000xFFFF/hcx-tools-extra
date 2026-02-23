@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
         strncpy(item->hash, hash_part, sizeof(item->hash) - 1);
         item->hash[sizeof(item->hash) - 1] = 0;
 
-        hex2str(essid_hex, item->essid, sizeof(item->essid), args.nocolor);
+        hex2str(essid_hex, item->essid, sizeof(item->essid));
 
         strncpy(item->password, password, sizeof(item->password) - 1);
         item->password[sizeof(item->password) - 1] = 0;

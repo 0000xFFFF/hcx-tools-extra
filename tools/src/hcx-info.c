@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
         strncpy(item->hashid, parts[2], sizeof(item->hashid) - 1);
         strncpy(item->bssid, parts[3], sizeof(item->bssid) - 1);
         strncpy(item->mac, parts[4], sizeof(item->mac) - 1);
-        hex2str(parts[5], item->essid, sizeof(item->essid), args.nocolor);
+        hex2str(parts[5], item->essid, sizeof(item->essid));
 
         const char* pw = hashcat ? ht_get(hashcat, parts[2]) : NULL;
         if (pw)
