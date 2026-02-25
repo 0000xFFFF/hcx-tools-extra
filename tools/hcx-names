@@ -1,10 +1,29 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-# just print essids in hash file
+import argparse
+from utils import extract_essids_from_file
 
-INPUT_FILE="$1"
 
-while read -r line ; do
-    printf "$line" | awk 'BEGIN { FS = "*" } ; { print $6 }' | perl -pe 's/(..)/chr(hex($1))/ge'
-done <<< $(cat "$INPUT_FILE")
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Print ESSIDs from hash file'
+    )
+    parser.add_argument('hashes', help='Path to hashes input file')
+    return parser.parse_args()
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Extract and print ESSIDs
+    essids = extract_essids_from_file(args.hashes)
+    
+    for essid in essids:
+        print(essid)
+
+
+if __name__ == "__main__":
+    main()
 

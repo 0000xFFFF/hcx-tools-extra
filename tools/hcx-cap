@@ -5,7 +5,7 @@ import sys
 import subprocess
 import argparse
 from pathlib import Path
-from utils import get_script_dir
+from utils import get_script_dir, run_hcx_script
 
 
 def parse_arguments():
@@ -67,25 +67,6 @@ def create_unique_file(input_file, output_file, description):
     
     cmd = f"sort -u {input_file} > {output_file}"
     return run_command(cmd, f"{output_file}", check=False)
-
-
-def run_hcx_script(script_name, *args):
-    """Run an hcx-tools script with arguments."""
-    cmd = [script_name] + list(args)
-    try:
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        return result.stdout
-    except FileNotFoundError:
-        print(f"Error: {script_name} not found", file=sys.stderr)
-        return None
-    except subprocess.SubprocessError as e:
-        print(f"Error running {script_name}: {e}", file=sys.stderr)
-        return None
 
 
 def process_hashcat_results():

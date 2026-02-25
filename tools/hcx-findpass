@@ -1,4 +1,53 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-SEARCH="$1"
-grep "$SEARCH" ~/.vip/lists/wlst/commonfirst/*
+import os
+import argparse
+import glob
+from utils import grep_files
+
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Search for a password in common wordlist files'
+    )
+    parser.add_argument('search', help='Search term to find in wordlists')
+    parser.add_argument('-p', '--path', 
+                        default='~/.vip/lists/wlst/commonfirst/parts/',
+                        help='Path to wordlist directory (default: ~/.vip/lists/wlst/commonfirst/parts/)')
+    return parser.parse_args()
+
+
+def search_wordlists(search_term, wordlist_path):
+    """Search for a term in all files in the wordlist directory."""
+    expanded_path = os.path.expanduser(wordlist_path)
+    
+    if not os.path.exists(expanded_path):
+        print(f"Error: Path '{expanded_path}' does not exist")
+        return None
+    
+    # Get all files in the directory
+    file_pattern = glob.glob(os.path.join(expanded_path, '*'))
+    
+    if not file_pattern:
+        print(f"Warning: No files found in '{expanded_path}'")
+        return None
+    
+    return grep_files(search_term, file_pattern)
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Search wordlists
+    results = search_wordlists(args.search, args.path)
+    
+    if results:
+        print(results, end='')
+    else:
+        print(f"No matches found for '{args.search}'")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,79 @@
-#!/usr/bin/env bash
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
+#!/usr/bin/env python3
 
-hcx-rmhashes "$1" "$MAINDB"
+import os
+import sys
+import argparse
+from utils import get_script_dir, run_hcx_script, read_lines_from_file
+
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Show new hashes not present in main database (maindb.txt)'
+    )
+    parser.add_argument('hashes', help='Path to hashes input file')
+    parser.add_argument('-o', '--output', 
+                        help='Output file for new hashes (default: print to stdout)')
+    return parser.parse_args()
+
+
+def get_maindb_path():
+    """Get the main database path from maindb.txt."""
+    maindb_file = os.path.join(get_script_dir(), "maindb.txt")
+    
+    if not os.path.exists(maindb_file):
+        print(f"Error: maindb.txt not found in {get_script_dir()}", file=sys.stderr)
+        print("NOTE: maindb.txt should contain the path to the main database", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(maindb_file, 'r') as f:
+        maindb_path = f.read().strip()
+    
+    if not maindb_path:
+        print("Error: maindb.txt is empty", file=sys.stderr)
+        sys.exit(1)
+    
+    if not os.path.exists(maindb_path):
+        print(f"Error: Main database '{maindb_path}' does not exist", file=sys.stderr)
+        sys.exit(1)
+    
+    return maindb_path
+
+
+def get_new_hashes(hashes_file, maindb_path):
+    """Get hashes from hashes_file that are not in maindb."""
+    output = run_hcx_script("hcx-rmhashes", hashes_file, maindb_path)
+    
+    if output is None:
+        print("Error: Failed to compare hashes", file=sys.stderr)
+        sys.exit(1)
+    
+    return output
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Verify input file exists
+    if not os.path.exists(args.hashes):
+        print(f"Error: Input file '{args.hashes}' does not exist", file=sys.stderr)
+        sys.exit(1)
+    
+    # Get main database path
+    maindb_path = get_maindb_path()
+    
+    # Get new hashes
+    new_hashes = get_new_hashes(args.hashes, maindb_path)
+    
+    # Output results
+    if args.output:
+        with open(args.output, 'w') as f:
+            f.write(new_hashes)
+        print(f"New hashes written to {args.output}")
+    else:
+        print(new_hashes, end='')
+
+
+if __name__ == "__main__":
+    main()

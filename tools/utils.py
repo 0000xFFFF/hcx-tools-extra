@@ -2,6 +2,8 @@
 
 import re
 import os
+import subprocess
+import sys
 
 
 def hex2str(hex_string):
@@ -90,3 +92,50 @@ def read_lines_from_file(filepath):
 def get_unique_key(parsed):
     """Generate a unique key from BSSID and ESSID."""
     return f"{parsed['essid']}{parsed['bssid']}"
+
+
+def extract_essids_from_file(filepath):
+    """Extract all ESSIDs from a hash file."""
+    lines = read_lines_from_file(filepath)
+    essids = []
+    
+    for line in lines:
+        parsed = parse_hash_line(line)
+        if parsed:
+            essids.append(parsed['essid'])
+    
+    return essids
+
+
+def run_hcx_script(script_name, *args):
+    """Run an hcx-tools script with arguments and return output."""
+    cmd = [script_name] + list(args)
+    try:
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return result.stdout
+    except FileNotFoundError:
+        print(f"Error: {script_name} not found", file=sys.stderr)
+        return None
+    except subprocess.SubprocessError as e:
+        print(f"Error running {script_name}: {e}", file=sys.stderr)
+        return None
+
+
+def grep_files(search_term, file_pattern):
+    """Search for a term in files matching a pattern using grep."""
+    try:
+        result = subprocess.run(
+            ['grep', search_term] + file_pattern,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return result.stdout
+    except subprocess.SubprocessError as e:
+        print(f"Error running grep: {e}", file=sys.stderr)
+        return None
