@@ -1,16 +1,115 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-SEARCH="$1"
-WRITE="$2"
+import os
+import sys
+import subprocess
+import argparse
+from utils import get_script_dir
 
-# NOTE: maindb.txt is the file that contains the path to the main database used by hcx-tools.
-# NOTE: It should be located in the same directory as this script.
 
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Fetch hashes from main database by searching ESSID'
+    )
+    parser.add_argument('search', help='Search term (ESSID)')
+    parser.add_argument('-w', '--write', action='store_true',
+                        help='Write results to fetch.txt instead of displaying')
+    return parser.parse_args()
 
-if [ -z "$WRITE" ]; then
-        hcx-info "$MAINDB" -s 5 | grep -i "$SEARCH"
-else
-        hcx-info "$MAINDB" -g "$SEARCH" >> fetch.txt
-fi
+
+def get_maindb_path():
+    """Get the main database path from maindb.txt."""
+    maindb_file = os.path.join(get_script_dir(), "maindb.txt")
+    
+    if not os.path.exists(maindb_file):
+        print(f"Error: maindb.txt not found in {get_script_dir()}", file=sys.stderr)
+        print("NOTE: maindb.txt should contain the path to the main database", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(maindb_file, 'r') as f:
+        maindb_path = f.read().strip()
+    
+    if not maindb_path:
+        print("Error: maindb.txt is empty", file=sys.stderr)
+        sys.exit(1)
+    
+    if not os.path.exists(maindb_path):
+        print(f"Error: Main database '{maindb_path}' does not exist", file=sys.stderr)
+        sys.exit(1)
+    
+    return maindb_path
+
+
+def search_database(maindb_path, search_term, write_mode=False):
+    """Search the main database for the given term."""
+    if write_mode:
+        # Write mode: use -g flag and append to fetch.txt
+        cmd = ['hcx-info', maindb_path, '-g', search_term]
+        try:
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+            
+            with open('fetch.txt', 'a') as f:
+                f.write(result.stdout)
+            
+            print(f"Results appended to fetch.txt")
+            
+        except subprocess.CalledProcessError as e:
+            print(f"Error running hcx-info: {e}", file=sys.stderr)
+            sys.exit(1)
+        except FileNotFoundError:
+            print("Error: hcx-info command not found", file=sys.stderr)
+            sys.exit(1)
+    else:
+        # Display mode: use -s 5 flag and grep for search term
+        try:
+            # Run hcx-info
+            hcx_result = subprocess.run(
+                ['hcx-info', maindb_path, '-s', '5'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+            
+            # Pipe to grep
+            grep_result = subprocess.run(
+                ['grep', '-i', search_term],
+                input=hcx_result.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            if grep_result.stdout:
+                print(grep_result.stdout, end='')
+            else:
+                print(f"No results found for '{search_term}'")
+            
+        except subprocess.CalledProcessError as e:
+            print(f"Error running hcx-info: {e}", file=sys.stderr)
+            sys.exit(1)
+        except FileNotFoundError:
+            print("Error: hcx-info or grep command not found", file=sys.stderr)
+            sys.exit(1)
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Get main database path
+    maindb_path = get_maindb_path()
+    
+    # Search database
+    search_database(maindb_path, args.search, args.write)
+
+
+if __name__ == "__main__":
+    main()
