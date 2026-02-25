@@ -1,37 +1,99 @@
 #!/usr/bin/env python3
 
 import sys
+import csv
 import argparse
-
-parser = argparse.ArgumentParser(description="hashes to csv")
-parser.add_argument(
-    "-f", "--format", action="store_true", help="format bssid to XX:XX:XX:XX:XX:XX"
-)
-parser.add_argument("filename", type=argparse.FileType("r"))
-args = parser.parse_args()
-
-with args.filename as file:
-    lines = file.read().splitlines()
+from utils import parse_hash_line, read_lines_from_file
 
 
-def hex2str(hex_string):
-    try:
-        return bytes.fromhex(hex_string).decode("utf-8")
-    except ValueError:
-        return "HEX ERROR"
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Convert hash file to CSV format'
+    )
+    parser.add_argument('hashes', help='Path to hashes input file')
+    parser.add_argument('-o', '--output', 
+                        help='Output CSV file (default: stdout)')
+    parser.add_argument('-d', '--delimiter', default=',', 
+                        help='CSV delimiter (default: comma)')
+    parser.add_argument('-f', '--format', action='store_true',
+                        help='Format BSSID and MAC to XX:XX:XX:XX:XX:XX')
+    parser.add_argument('--no-header', action='store_true',
+                        help='Omit CSV header row')
+    return parser.parse_args()
 
 
-def line2info(line):
-    split = line.split("*")
-    hash_id = split[2]
-    hash_id, bssid, mac, essid = split[2], split[3], split[4], hex2str(split[5])
-    if args.format:
-        bssid = bssid.upper()
-        bssid = f"{bssid[0:2]}:{bssid[2:4]}:{bssid[4:6]}:{bssid[6:8]}:{bssid[8:10]}:{bssid[10:12]}"
-        mac = mac.upper()
-        mac = f"{mac[0:2]}:{mac[2:4]}:{mac[4:6]}:{mac[6:8]}:{mac[8:10]}:{mac[10:12]}"
-    return [hash_id, bssid, mac, essid]
+def format_mac_address(mac):
+    """Format MAC address to XX:XX:XX:XX:XX:XX format."""
+    mac_upper = mac.upper().replace(':', '').replace('-', '')
+    if len(mac_upper) == 12:
+        return f"{mac_upper[0:2]}:{mac_upper[2:4]}:{mac_upper[4:6]}:{mac_upper[6:8]}:{mac_upper[8:10]}:{mac_upper[10:12]}"
+    return mac
 
 
-for line in lines:
-    print(",".join(line2info(line)))
+def convert_hashes_to_csv(lines, format_macs=False, include_header=True):
+    """Convert hash lines to CSV rows."""
+    rows = []
+    
+    if include_header:
+        rows.append(['Hash', 'BSSID', 'MAC', 'ESSID'])
+    
+    for line in lines:
+        if not line:
+            continue
+        
+        parsed = parse_hash_line(line)
+        if not parsed:
+            print(f"Warning: Skipping invalid line", file=sys.stderr)
+            continue
+        
+        bssid = parsed['bssid']
+        mac = parsed['mac']
+        
+        if format_macs:
+            bssid = format_mac_address(bssid)
+            mac = format_mac_address(mac)
+        
+        row = [
+            parsed['hash'],
+            bssid,
+            mac,
+            parsed['essid']
+        ]
+        rows.append(row)
+    
+    return rows
+
+
+def write_csv_output(rows, output_file, delimiter):
+    """Write CSV rows to file or stdout."""
+    if output_file:
+        with open(output_file, 'w', newline='') as f:
+            writer = csv.writer(f, delimiter=delimiter)
+            writer.writerows(rows)
+        print(f"CSV written to {output_file}", file=sys.stderr)
+    else:
+        writer = csv.writer(sys.stdout, delimiter=delimiter)
+        writer.writerows(rows)
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Read hash file
+    lines = read_lines_from_file(args.hashes)
+    
+    # Convert to CSV rows
+    rows = convert_hashes_to_csv(
+        lines, 
+        format_macs=args.format, 
+        include_header=not args.no_header
+    )
+    
+    # Write output
+    write_csv_output(rows, args.output, args.delimiter)
+
+
+if __name__ == "__main__":
+    main()
