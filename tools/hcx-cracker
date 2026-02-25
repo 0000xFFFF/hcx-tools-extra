@@ -3,69 +3,70 @@
 import os
 import re
 import argparse
-from utils import rslatin_check, rslatin_replace, hex2str, wordlst2args
+from utils import rslatin_check, rslatin_replace, wordlst2args, load_config_file, get_script_dir, parse_hash_line
 
 # Constants
 SH_HEADER = "#!/bin/sh -x\n"
-BLACKLIST = {
-    "HSWIFI-", "Tech_", "HUAWEI ", "HUAWEI-", "-Guest", "ZTE_", "MIWIFI_",
-    "CGA", "TP-LINK_", "TP-Link_", "MikroTik-", "SBB-", "TS-", "CXNK",
-    "ALHN-", "HG630", "Telenor_Internet_", "AndroidAP", "OrionTelekom_",
-    "Telenor-Internet-"
-}
-
-# TODO: set your wordlists dictionaries here for word detection
-DETECT_WORDLISTS = [
-    "/home/user/.vip/lists/wlst/static/english.txt",
-    "/home/user/.vip/lists/wlst/static/rs.txt",
-    "/home/user/.vip/lists/wlst/serbianNames/serbianNames.txt",
-]
 DETECT_WORDLISTS_MIN_STRING_LEN = 4
 
-# Argument parser setup
-parser = argparse.ArgumentParser(description='Generate hashcat scripts and wordlists from ESSIDs for cracking. After running hcx-cracker... Run ./gen.sh to generate wordlists and then ./run.sh to start cracking...')
-parser.add_argument('-a', '--auto', action='store_true', help="Generate wordlst automatically by ESSID alone.")
-parser.add_argument('-b', '--blacklist', action='store_true', help="Skip hashes that don't generate a decent wordlist using the ESSID")
-parser.add_argument('-d', '--detect', action='store_true', help="Extends -a option ... detect words in essid from dictionary wordlists (change script's code to set wlsts)")
-parser.add_argument('-l', '--lists', action='store_true', help="Add wordlists to ./run.sh (change script's code to set wlsts)")
-parser.add_argument('hashes', help="Path to hashes input file")
-args = parser.parse_args()
 
-# Read hashes file
-with args.hashes as file:
-    hashes_file_lines = file.read().splitlines()
+def load_blacklist():
+    """Load blacklist items from config file."""
+    config_path = os.path.join(get_script_dir(), 'hcx-cracker-blacklist.txt')
+    return set(load_config_file(config_path))
 
-if args.detect:
+
+def load_detect_wordlists():
+    """Load detect wordlist paths from config file."""
+    config_path = os.path.join(get_script_dir(), 'hcx-cracker-wordlist.txt')
+    return load_config_file(config_path)
+
+
+def build_detect_set(wordlist_paths):
+    """Build a set of words from multiple wordlist files for detection."""
     detect_set = set()
-    for f in DETECT_WORDLISTS:
+    for f in wordlist_paths:
+        if not os.path.exists(f):
+            continue
         with open(f, 'r') as file:
             for line in file:
                 l = line.strip().lower()
                 if len(l) >= DETECT_WORDLISTS_MIN_STRING_LEN:
                     detect_set.add(l)
+    return detect_set
 
-    def detect_english_words(input_essid):
-        essid = input_essid.lower()
-        detected = set()
-        for i in detect_set:
-            if i in essid:
-                detected.add(i)
-        return list(detected)
 
-def essid2wordlst(input_essid):
-    essid = input_essid.replace("\"", "") # remove " so it doesn't break ./run script
+def detect_words_in_essid(essid, detect_set):
+    """Detect words from detect_set that appear in the ESSID."""
+    essid_lower = essid.lower()
+    detected = set()
+    for word in detect_set:
+        if word in essid_lower:
+            detected.add(word)
+    return list(detected)
 
+
+def is_blacklisted(essid, blacklist):
+    """Check if ESSID matches blacklist criteria."""
+    if any(blacklist_item in essid for blacklist_item in blacklist):
+        return True
+    if len(essid) == 6 and re.fullmatch(r"[0-9a-fA-F]{6}", essid):
+        return True
+    return False
+
+
+def essid2wordlst(input_essid, blacklist, detect_set=None, use_blacklist=False, use_detect=False):
+    """Generate wordlist variations from an ESSID."""
+    essid = input_essid.replace("\"", "")  # remove " so it doesn't break ./run script
+    
     wordlst_set = set()
     wordlst = []
 
     if rslatin_check(essid):
         essid = rslatin_replace(essid)
 
-    if args.blacklist:
-        if any(blacklist_item in essid for blacklist_item in BLACKLIST):
-            return []
-        if len(essid) == 6 and re.fullmatch(r"[0-9a-fA-F]{6}", essid):
-            return []
+    if use_blacklist and is_blacklisted(essid, blacklist):
+        return []
 
     def add_unique(input_word):
         word = input_word.strip()
@@ -86,7 +87,8 @@ def essid2wordlst(input_essid):
         add_unique(extract_before_number(word))
 
     def add_word_combinations(words):
-        for word in words: add_variations(word)
+        for word in words:
+            add_variations(word)
         add_variations("".join(words))
         add_variations("".join(reversed(words)))
 
@@ -99,124 +101,193 @@ def essid2wordlst(input_essid):
     add_variations(essid)
     add_word_combinations(re_splitting(essid))
     add_word_combinations(split_camel_case(essid))
-    if args.detect: add_word_combinations(detect_english_words(essid))
+    
+    if use_detect and detect_set:
+        detected_words = detect_words_in_essid(essid, detect_set)
+        add_word_combinations(detected_words)
 
     return wordlst
 
-items = []
-counter = 0
-skipped = 0
 
-for line in hashes_file_lines:
-    if not line:
-        continue
+def process_hashes(hashes_lines, args, blacklist, detect_set=None):
+    """Process all hash lines and generate wordlists."""
+    items = []
+    counter = 0
+    skipped = 0
 
-    counter += 1
-    parts = line.split("*")
-    if len(parts) < 6:
-        print(f"Invalid line format: {line}")
-        continue
-
-    hash_type, hash_value, bssid, mac, essid = parts[1], parts[2], parts[3], parts[4], hex2str(parts[5])
-    type_str = "PMKID" if hash_type == "01" else "EAPOL" if hash_type == "02" else "UNKNOWN"
-    print(f"{counter}\t{type_str}\t{hash_value}\t{bssid}\t{mac}\t{essid}", end=" --> ")
-
-    if args.auto:
-        wordlst = essid2wordlst(essid)
-        if not wordlst:
-            skipped += 1
-            print(f"BLACKLISTED ({skipped})")
-            continue
-        print(" ".join(wordlst))
-    else:
-        wordlst = input(" --> ").split()
-        if not wordlst:
-            skipped += 1
-            print(f"SKIPPED ({skipped})")
+    for line in hashes_lines:
+        if not line:
             continue
 
-    genlst = wordlst2args(wordlst)
-    items.append([line, type_str, hash_value, bssid, mac, essid, genlst, len(wordlst)])
+        counter += 1
+        parsed = parse_hash_line(line)
+        
+        if not parsed:
+            print(f"Invalid line format: {line}")
+            continue
 
-# Sorting items
-items.sort(key=lambda x: (x[7], x[5]))
+        print(f"{counter}\t{parsed['type']}\t{parsed['hash']}\t{parsed['bssid']}\t{parsed['mac']}\t{parsed['essid']}", end=" --> ")
 
-# Generating scripts
-file_gen = "gen.sh"
-file_run = "run.sh"
-print(f"\n+--> {file_gen}")
-
-prev_essid = ""
-prev_file_1 = ""
-prev_file_2 = ""
-
-files = []
-with open(file_gen, 'w') as f_gen:
-    f_gen.write(SH_HEADER)
-    for num, item in enumerate(items, 1):
-        file_1 = f"hash{num:03}.txt"
-        file_2 = f"hash{num:03}.lst"
-
-        dogen = True
-
-        if prev_essid and prev_essid == item[5]:
-            file_1 = prev_file_1
-            file_2 = prev_file_2
-            with open(file_1, 'a+') as f1:
-                f1.write(f"{item[0]}\n")
-            dogen = False
+        if args.auto:
+            wordlst = essid2wordlst(
+                parsed['essid'], 
+                blacklist, 
+                detect_set, 
+                use_blacklist=args.blacklist, 
+                use_detect=args.detect
+            )
+            if not wordlst:
+                skipped += 1
+                print(f"BLACKLISTED ({skipped})")
+                continue
+            print(" ".join(wordlst))
         else:
-            with open(file_1, 'w') as f1:
-                f1.write(f"{item[0]}\n")
+            wordlst = input(" --> ").split()
+            if not wordlst:
+                skipped += 1
+                print(f"SKIPPED ({skipped})")
+                continue
 
-        if dogen:
-            command = f"hcx-fastgenlst -lut123 {item[6]} -o \"{file_2}\" # {item[5]}\n"
-            f_gen.write(command)
-            print(f"| {command}", end="")
-            files.append([file_1, file_2, item])
+        genlst = wordlst2args(wordlst)
+        items.append([
+            parsed['line'], 
+            parsed['type'], 
+            parsed['hash'], 
+            parsed['bssid'], 
+            parsed['mac'], 
+            parsed['essid'], 
+            genlst, 
+            len(wordlst)
+        ])
 
-        prev_essid = item[5]
-        prev_file_1 = file_1
-        prev_file_2 = file_2
+    return items, skipped
 
-part_1_start = 1
-part_1_end   = 13
-part_2_end   = 24
 
-# TODO: set your short wordlists here
-def write_shortlists(f_run):
-    for i in range(part_1_start, part_1_end+1):
-        line = f"hashcat --quiet -m 22000 \"{args.filename.name}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt\" -w 4 --session \"part{i}\" 2>/dev/null\n"
+def generate_hash_files(items):
+    """Generate individual hash files and return file mappings."""
+    items.sort(key=lambda x: (x[7], x[5]))
+    
+    prev_essid = ""
+    prev_file_1 = ""
+    prev_file_2 = ""
+    files = []
+
+    with open("gen.sh", 'w') as f_gen:
+        f_gen.write(SH_HEADER)
+        
+        for num, item in enumerate(items, 1):
+            file_1 = f"hash{num:03}.txt"
+            file_2 = f"hash{num:03}.lst"
+            dogen = True
+
+            if prev_essid and prev_essid == item[5]:
+                file_1 = prev_file_1
+                file_2 = prev_file_2
+                with open(file_1, 'a+') as f1:
+                    f1.write(f"{item[0]}\n")
+                dogen = False
+            else:
+                with open(file_1, 'w') as f1:
+                    f1.write(f"{item[0]}\n")
+
+            if dogen:
+                command = f"hcx-fastgenlst -lut123 {item[6]} -o \"{file_2}\" # {item[5]}\n"
+                f_gen.write(command)
+                print(f"| {command}", end="")
+                files.append([file_1, file_2, item])
+
+            prev_essid = item[5]
+            prev_file_1 = file_1
+            prev_file_2 = file_2
+
+    return files
+
+
+def write_shortlists(f_run, hashes_filename):
+    """Write shortlist hashcat commands."""
+    for i in range(1, 14):
+        line = f"hashcat --quiet -m 22000 \"{hashes_filename}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt\" -w 4 --session \"part{i}\" 2>/dev/null\n"
         f_run.write(line)
         print(f"| {line}", end="")
 
-# TODO: set your long wordlists here
-def write_longlists(f_run):
-    for i in range(part_1_end+1, part_2_end+1):
-        line = f"hashcat --quiet -m 22000 \"{args.filename.name}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt\" -w 4 --session \"part{i}\" 2>/dev/null\n"
+
+def write_longlists(f_run, hashes_filename):
+    """Write longlist hashcat commands."""
+    for i in range(14, 25):
+        line = f"hashcat --quiet -m 22000 \"{hashes_filename}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt\" -w 4 --session \"part{i}\" 2>/dev/null\n"
         f_run.write(line)
         print(f"| {line}", end="")
 
-print(f"\n+--> {file_run}")
-with open(file_run, 'w') as f_run:
-    f_run.write(SH_HEADER)
-    print(f"| {SH_HEADER}", end="")
 
-    if args.lists: write_shortlists(f_run)
+def generate_run_script(files, args):
+    """Generate the run.sh script with hashcat commands."""
+    print(f"\n+--> run.sh")
+    
+    with open("run.sh", 'w') as f_run:
+        f_run.write(SH_HEADER)
+        print(f"| {SH_HEADER}", end="")
 
-    for file_1, file_2, item in files:
-        line = f"hashcat --quiet -m 22000 {file_1} -a 0 {file_2} -w 4 --session \"{item[2]}\" 2>/dev/null # {item[3]} {item[5]}\n"
-        f_run.write(line)
-        print(f"| {line}", end="")
+        if args.lists:
+            write_shortlists(f_run, args.hashes)
 
-    if args.lists: write_longlists(f_run)
+        for file_1, file_2, item in files:
+            line = f"hashcat --quiet -m 22000 {file_1} -a 0 {file_2} -w 4 --session \"{item[2]}\" 2>/dev/null # {item[3]} {item[5]}\n"
+            f_run.write(line)
+            print(f"| {line}", end="")
 
-# Set +x permission
-os.chmod(file_gen, 0o755)
-os.chmod(file_run, 0o755)
+        if args.lists:
+            write_longlists(f_run, args.hashes)
 
-print()
-print(f" -- files..: {len(files)}")
-print(f" -- skipped: {skipped}")
-print(" -- done.")
+
+def main():
+    """Main execution function."""
+    parser = argparse.ArgumentParser(
+        description='Generate hashcat scripts and wordlists from ESSIDs for cracking. '
+                    'After running hcx-cracker... Run ./gen.sh to generate wordlists '
+                    'and then ./run.sh to start cracking...'
+    )
+    parser.add_argument('-a', '--auto', action='store_true', 
+                        help="Generate wordlst automatically by ESSID alone.")
+    parser.add_argument('-b', '--blacklist', action='store_true', 
+                        help="Skip hashes that don't generate a decent wordlist using the ESSID")
+    parser.add_argument('-d', '--detect', action='store_true', 
+                        help="Extends -a option ... detect words in essid from dictionary wordlists")
+    parser.add_argument('-l', '--lists', action='store_true', 
+                        help="Add wordlists to ./run.sh")
+    parser.add_argument('hashes', help="Path to hashes input file")
+    args = parser.parse_args()
+
+    # Load configuration
+    blacklist = load_blacklist()
+    detect_set = None
+    
+    if args.detect:
+        wordlist_paths = load_detect_wordlists()
+        detect_set = build_detect_set(wordlist_paths)
+
+    # Read hashes file
+    with open(args.hashes, 'r') as file:
+        hashes_lines = file.read().splitlines()
+
+    # Process hashes
+    items, skipped = process_hashes(hashes_lines, args, blacklist, detect_set)
+
+    # Generate scripts
+    print(f"\n+--> gen.sh")
+    files = generate_hash_files(items)
+    generate_run_script(files, args)
+
+    # Set +x permission
+    os.chmod("gen.sh", 0o755)
+    os.chmod("run.sh", 0o755)
+
+    # Summary
+    print()
+    print(f" -- files..: {len(files)}")
+    print(f" -- skipped: {skipped}")
+    print(" -- done.")
+
+
+if __name__ == "__main__":
+    main()
 

@@ -2,11 +2,13 @@
 
 import argparse
 import subprocess
-from utils import line2info
+from utils import parse_hash_line
+
 
 def abgl(bssid):
     result = subprocess.run(["abgl", bssid], capture_output=True, text=True)
     return str(result.stdout).strip()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="geolocate bssid using abgl (https://github.com/0000xFFFF/apple-bssid-geoloc)")
@@ -17,5 +19,8 @@ if __name__ == "__main__":
         lines = f.read().splitlines()
 
     for line in lines:
-        info = line2info(line)
-        print(" ".join(info), "--", abgl(info[1]))
+        info = parse_hash_line(line)
+        if info:
+            bssidu = info['bssid'].upper()
+            bssiduf = f"{bssidu[0:2]}:{bssidu[2:4]}:{bssidu[4:6]}:{bssidu[6:8]}:{bssidu[8:10]}:{bssidu[10:12]}"
+            print(" ".join([info['bssid'], info['mac'], info['essid']]), "--", abgl(bssiduf))
