@@ -24,3 +24,6 @@ def rslatin_check(s):
 def rslatin_replace(s):
     translations = str.maketrans("čćšžđČĆŠŽÐ", "ccszdCCSZD")
     return s.translate(translations)
+
+def wordlst2args(wordlst):
+    return " ".join(f'-s "{word}"' for word in wordlst)

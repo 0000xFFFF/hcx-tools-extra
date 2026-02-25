@@ -3,6 +3,7 @@
 import os
 import re
 import argparse
+from utils import rslatin_check, rslatin_replace, hex2str, wordlst2args
 
 # Constants
 SH_HEADER = "#!/bin/sh -x\n"
@@ -27,29 +28,12 @@ parser.add_argument('-a', '--auto', action='store_true', help="Generate wordlst 
 parser.add_argument('-b', '--blacklist', action='store_true', help="Skip hashes that don't generate a decent wordlist using the ESSID")
 parser.add_argument('-d', '--detect', action='store_true', help="Extends -a option ... detect words in essid from dictionary wordlists (change script's code to set wlsts)")
 parser.add_argument('-l', '--lists', action='store_true', help="Add wordlists to ./run.sh (change script's code to set wlsts)")
-parser.add_argument('filename', type=argparse.FileType('r'))
+parser.add_argument('hashes', help="Path to hashes input file")
 args = parser.parse_args()
 
 # Read hashes file
-with args.filename as file:
+with args.hashes as file:
     hashes_file_lines = file.read().splitlines()
-
-# Helper functions
-def hex2str(hex_string):
-    try:
-        return bytes.fromhex(hex_string).decode('utf-8')
-    except (ValueError, TypeError):
-        return "HEX ERROR"
-
-def rslatin_check(s):
-    return bool(re.search(r'[čćšžđČĆŠŽÐ]', s))
-
-def rslatin_replace(s):
-    translations = str.maketrans("čćšžđČĆŠŽÐ", "ccszdCCSZD")
-    return s.translate(translations)
-
-def wordlst2args(wordlst):
-    return " ".join(f'-s "{word}"' for word in wordlst)
 
 if args.detect:
     detect_set = set()
