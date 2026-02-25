@@ -1,5 +1,7 @@
-- hcx-genlst-keywords
-- split code that is reused to utils.py
+- rewrite hcx-wifi
+- test hcx-wifi-maconly
+- rewrite hcx-rpidump
+- ??? rewrite hcx-genlst-* scripts???
 
 # venv
 - rename all py files to py
