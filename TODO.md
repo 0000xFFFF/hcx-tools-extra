@@ -1,5 +1,4 @@
 - rewrite hcx-wifi
-- test hcx-wifi-maconly
 - rewrite hcx-rpidump
 - ??? rewrite hcx-genlst-* scripts???
 
