@@ -2,7 +2,7 @@
 
 import argparse
 import subprocess
-from .utils import line2info
+from utils import line2info
 
 def abgl(bssid):
     result = subprocess.run(["abgl", bssid], capture_output=True, text=True)
@@ -10,11 +10,11 @@ def abgl(bssid):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="geolocate bssid using abgl (https://github.com/0000xFFFF/apple-bssid-geoloc)")
-    parser.add_argument('hashes.txt', help="Path to input file (hashes))")
+    parser.add_argument('hashes', help="Path to hashes input file")
     args = parser.parse_args()
 
-    with args.filename as file:
-        lines = file.read().splitlines()
+    with open(args.hashes, 'r', encoding='utf-8') as f:
+        lines = f.read().splitlines()
 
     for line in lines:
         info = line2info(line)
