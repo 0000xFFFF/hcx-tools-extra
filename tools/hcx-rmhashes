@@ -1,41 +1,74 @@
 #!/usr/bin/env python3
 
-import sys
+import argparse
+from utils import parse_hash_line, read_lines_from_file, get_unique_key
 
-if len(sys.argv) < 3:
-    print("ABOUT: remove hashes from another file by matching it's bssid+essid")
-    print("USAGE: " + sys.argv[0] + " <hashesFile> <hashesToRemoveFile>")
-    exit()
 
-with open(sys.argv[1], 'r') as file1:
-    lines1 = [line.strip() for line in file1 if line.strip()]
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Remove hashes from another file by matching BSSID+ESSID'
+    )
+    parser.add_argument('hashes', help='Path to hashes input file')
+    parser.add_argument('remove', help='Path to hashes to remove file')
+    return parser.parse_args()
 
-with open(sys.argv[2], 'r') as file2:
-    lines2 = [line.strip() for line in file2 if line.strip()]
 
-def hex2str(hex_string):
-    try: return bytes.fromhex(hex_string).decode('utf-8')
-    except ValueError: return "HEX ERROR"
+def build_removal_set(lines):
+    """Build a set of keys to remove from the removal file."""
+    keys_to_remove = set()
+    
+    for line in lines:
+        if not line:
+            continue
+        
+        parsed = parse_hash_line(line)
+        if not parsed:
+            continue
+        
+        key = get_unique_key(parsed)
+        keys_to_remove.add(key)
+    
+    return keys_to_remove
 
-def line2info(line):
-    split = line.split("*")
-    hash_id = split[2]
-    hash_id, bssid, mac, essid = split[2], split[3], split[4], hex2str(split[5])
-    return hash_id, bssid, mac, essid
 
-keys_to_remove = set()
-for line in lines2:
-    if not line: continue
-    hash_id, bssid, mac, essid = line2info(line)
-    key = f"{essid}{bssid}{essid}{bssid}"
-    keys_to_remove.add(key)
+def filter_hashes(lines, keys_to_remove):
+    """Filter out hashes that match keys in the removal set."""
+    filtered_lines = []
+    
+    for line in lines:
+        if not line:
+            continue
+        
+        parsed = parse_hash_line(line)
+        if not parsed:
+            continue
+        
+        key = get_unique_key(parsed)
+        if key not in keys_to_remove:
+            filtered_lines.append(line)
+    
+    return filtered_lines
 
-hashes_dict = {}
-for line in lines1:
-    if not line: continue
-    hash_id, bssid, mac, essid = line2info(line)
-    key = f"{essid}{bssid}{essid}{bssid}"
-    if key not in keys_to_remove:
-        hashes_dict[bssid] = line
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Read both files
+    main_lines = read_lines_from_file(args.hashes)
+    remove_lines = read_lines_from_file(args.remove)
+    
+    # Build removal set
+    keys_to_remove = build_removal_set(remove_lines)
+    
+    # Filter and print remaining hashes
+    filtered_hashes = filter_hashes(main_lines, keys_to_remove)
+    
+    for line in filtered_hashes:
         print(line)
+
+
+if __name__ == "__main__":
+    main()
 

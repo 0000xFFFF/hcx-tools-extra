@@ -85,3 +85,8 @@ def read_lines_from_file(filepath):
     """Read and return non-empty lines from a file."""
     with open(filepath, 'r') as f:
         return [line.strip() for line in f if line.strip()]
+
+
+def get_unique_key(parsed):
+    """Generate a unique key from BSSID and ESSID."""
+    return f"{parsed['essid']}{parsed['bssid']}"

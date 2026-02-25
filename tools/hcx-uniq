@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from utils import parse_hash_line, read_lines_from_file
+from utils import parse_hash_line, read_lines_from_file, get_unique_key
 
 
 def parse_arguments():
@@ -12,12 +12,6 @@ def parse_arguments():
     )
     parser.add_argument('hashes', help='Path to hashes input file')
     return parser.parse_args()
-
-
-def get_unique_key(parsed):
-    """Generate a unique key from BSSID and ESSID."""
-    return f"{parsed['essid']}{parsed['bssid']}"
-
 
 def filter_unique_hashes(lines):
     """Filter and return unique hash lines based on BSSID+ESSID."""
