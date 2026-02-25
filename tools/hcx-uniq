@@ -16,7 +16,7 @@ def parse_arguments():
 
 def get_unique_key(parsed):
     """Generate a unique key from BSSID and ESSID."""
-    return f"{parsed['essid']}{parsed['bssid']}{parsed['essid']}{parsed['bssid']}"
+    return f"{parsed['essid']}{parsed['bssid']}"
 
 
 def filter_unique_hashes(lines):
