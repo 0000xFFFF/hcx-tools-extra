@@ -3,6 +3,9 @@
 SEARCH="$1"
 WRITE="$2"
 
+# NOTE: maindb.txt is the file that contains the path to the main database used by hcx-tools.
+# NOTE: It should be located in the same directory as this script.
+
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
 
