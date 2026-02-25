@@ -2,7 +2,7 @@
 
 import argparse
 import subprocess
-from utils import parse_hash_line
+from utils import parse_hash_line, format_mac_address
 
 
 def abgl(bssid):
@@ -21,6 +21,4 @@ if __name__ == "__main__":
     for line in lines:
         info = parse_hash_line(line)
         if info:
-            bssidu = info['bssid'].upper()
-            bssiduf = f"{bssidu[0:2]}:{bssidu[2:4]}:{bssidu[4:6]}:{bssidu[6:8]}:{bssidu[8:10]}:{bssidu[10:12]}"
-            print(" ".join([info['bssid'], info['mac'], info['essid']]), "--", abgl(bssiduf))
+            print(" ".join([info['bssid'], info['mac'], info['essid']]), "--", abgl(format_mac_address(info['bssid'])))

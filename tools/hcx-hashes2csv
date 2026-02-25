@@ -3,7 +3,7 @@
 import sys
 import csv
 import argparse
-from utils import parse_hash_line, read_lines_from_file
+from utils import parse_hash_line, read_lines_from_file, format_mac_address
 
 
 def parse_arguments():
@@ -21,14 +21,6 @@ def parse_arguments():
     parser.add_argument('--no-header', action='store_true',
                         help='Omit CSV header row')
     return parser.parse_args()
-
-
-def format_mac_address(mac):
-    """Format MAC address to XX:XX:XX:XX:XX:XX format."""
-    mac_upper = mac.upper().replace(':', '').replace('-', '')
-    if len(mac_upper) == 12:
-        return f"{mac_upper[0:2]}:{mac_upper[2:4]}:{mac_upper[4:6]}:{mac_upper[6:8]}:{mac_upper[8:10]}:{mac_upper[10:12]}"
-    return mac
 
 
 def convert_hashes_to_csv(lines, format_macs=False, include_header=True):

@@ -215,3 +215,11 @@ def mac2vendor_from_cache(mac_address, cache):
     
     oui = mac_normalized[:6]
     return cache.get(oui, "Unknown")
+
+
+def format_mac_address(mac):
+    """Format MAC address to XX:XX:XX:XX:XX:XX format."""
+    mac_normalized = mac.upper().replace(':', '').replace('-', '')
+    if len(mac_normalized) == 12:
+        return f"{mac_normalized[0:2]}:{mac_normalized[2:4]}:{mac_normalized[4:6]}:{mac_normalized[6:8]}:{mac_normalized[8:10]}:{mac_normalized[10:12]}"
+    return mac
