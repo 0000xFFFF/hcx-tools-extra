@@ -1,35 +1,239 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-# ABOUT: extract all info from *.cap *.pcapng files with hcxpcapngtool
+import os
+import sys
+import subprocess
+import argparse
+from pathlib import Path
+from utils import get_script_dir
 
-echo "-- hcxpcapngtool"
-hcxpcapngtool *.pcapng *.cap -E essid.txt -R probeonly.txt -I identity.txt -U username.txt -D deviceinfo.txt -o all.txt >/dev/null 2>/dev/null
-echo "-- essid_uniq.txt"
-sort -u essid.txt > essid_uniq.txt
-echo "-- probeonly_uniq.txt"
-sort -u probeonly.txt > probeonly_uniq.txt
-echo "-- identity_uniq.txt"
-sort -u identity.txt > identity_uniq.txt
-echo "-- username_uniq.txt"
-sort -u username.txt > username_uniq.txt
-echo "-- deviceinfo_uniq.txt"
-sort -u deviceinfo.txt > deviceinfo_uniq.txt
-echo "-- all_uniq.txt"
-sort -u all.txt > all_uniq.txt
-echo "-- all_uniq_bssid.txt"
-hcx-uniq all_uniq.txt > apuniq.txt
 
-hashcat -m 22000 --show "all_uniq.txt" > hashcat_cracked.txt
-hashcat -m 22000 --left "all_uniq.txt" > hashcat_uncracked.txt
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Extract all info from *.cap *.pcapng files with hcxpcapngtool'
+    )
+    parser.add_argument('-d', '--directory', default='.', 
+                        help='Directory containing .cap/.pcapng files (default: current directory)')
+    return parser.parse_args()
 
-hcx-uniq hashcat_uncracked.txt > left.txt
-hcx-rmhashes apuniq.txt left.txt > cracked.txt
 
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-MAINDB="$(cat $SCRIPT_DIR/maindb.txt)"
-if [ -f "$MAINDB" ]; then
-        hcx-rmhashes left.txt "$MAINDB" > new.txt
-fi
+def run_command(cmd, description, check=True):
+    """Run a shell command and print status."""
+    print(f"-- {description}")
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=check
+        )
+        return result.returncode == 0
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {description} failed - {e}", file=sys.stderr)
+        return False
 
-# generate passlst for hcx-wifi
-hcx-wifi-genpasslst apuniq.txt > passlst.csv
+
+def check_file_exists(filepath, description):
+    """Check if a file exists and print error if not."""
+    if not os.path.exists(filepath):
+        print(f"Error: {description} file '{filepath}' does not exist", file=sys.stderr)
+        return False
+    if os.path.getsize(filepath) == 0:
+        print(f"Warning: {description} file '{filepath}' is empty", file=sys.stderr)
+    return True
+
+
+def extract_with_hcxpcapngtool(directory):
+    """Extract data from capture files using hcxpcapngtool."""
+    pattern = os.path.join(directory, "*.pcapng") + " " + os.path.join(directory, "*.cap")
+    cmd = f"hcxpcapngtool {pattern} -E essid.txt -R probeonly.txt -I identity.txt -U username.txt -D deviceinfo.txt -o all.txt >/dev/null 2>/dev/null"
+    
+    success = run_command(cmd, "hcxpcapngtool")
+    
+    if not success or not check_file_exists("all.txt", "Output"):
+        print("Error: hcxpcapngtool failed to extract data", file=sys.stderr)
+        return False
+    
+    return True
+
+
+def create_unique_file(input_file, output_file, description):
+    """Create a unique sorted version of a file."""
+    if not check_file_exists(input_file, description):
+        return False
+    
+    cmd = f"sort -u {input_file} > {output_file}"
+    return run_command(cmd, f"{output_file}", check=False)
+
+
+def run_hcx_script(script_name, *args):
+    """Run an hcx-tools script with arguments."""
+    cmd = [script_name] + list(args)
+    try:
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return result.stdout
+    except FileNotFoundError:
+        print(f"Error: {script_name} not found", file=sys.stderr)
+        return None
+    except subprocess.SubprocessError as e:
+        print(f"Error running {script_name}: {e}", file=sys.stderr)
+        return None
+
+
+def process_hashcat_results():
+    """Process hashcat cracked and uncracked results."""
+    if not check_file_exists("all_uniq.txt", "Unique hashes"):
+        return False
+    
+    # Get cracked hashes
+    run_command(
+        'hashcat -m 22000 --show "all_uniq.txt" > hashcat_cracked.txt',
+        "hashcat_cracked.txt",
+        check=False
+    )
+    
+    # Get uncracked hashes
+    run_command(
+        'hashcat -m 22000 --left "all_uniq.txt" > hashcat_uncracked.txt',
+        "hashcat_uncracked.txt",
+        check=False
+    )
+    
+    return True
+
+
+def process_unique_hashes():
+    """Process unique hashes by BSSID."""
+    if not check_file_exists("all_uniq.txt", "Unique hashes"):
+        return False
+    
+    print("-- apuniq.txt")
+    output = run_hcx_script("hcx-uniq", "all_uniq.txt")
+    if output is not None:
+        with open("apuniq.txt", "w") as f:
+            f.write(output)
+        return True
+    return False
+
+
+def process_left_and_cracked():
+    """Process left (uncracked) and cracked hashes."""
+    if not check_file_exists("hashcat_uncracked.txt", "Uncracked hashes"):
+        return False
+    
+    print("-- left.txt")
+    output = run_hcx_script("hcx-uniq", "hashcat_uncracked.txt")
+    if output is None:
+        return False
+    
+    with open("left.txt", "w") as f:
+        f.write(output)
+    
+    if not check_file_exists("apuniq.txt", "Unique AP hashes"):
+        return False
+    
+    if not check_file_exists("left.txt", "Left hashes"):
+        return False
+    
+    print("-- cracked.txt")
+    output = run_hcx_script("hcx-rmhashes", "apuniq.txt", "left.txt")
+    if output is not None:
+        with open("cracked.txt", "w") as f:
+            f.write(output)
+        return True
+    return False
+
+
+def process_maindb():
+    """Process against main database if available."""
+    maindb_file = os.path.join(get_script_dir(), "maindb.txt")
+    
+    if not os.path.exists(maindb_file):
+        print("Info: maindb.txt not found, skipping maindb processing")
+        return True
+    
+    with open(maindb_file, 'r') as f:
+        maindb_path = f.read().strip()
+    
+    if not maindb_path or not os.path.exists(maindb_path):
+        print(f"Warning: Main database path '{maindb_path}' does not exist", file=sys.stderr)
+        return True
+    
+    if not check_file_exists("left.txt", "Left hashes"):
+        return False
+    
+    print("-- new.txt")
+    output = run_hcx_script("hcx-rmhashes", "left.txt", maindb_path)
+    if output is not None:
+        with open("new.txt", "w") as f:
+            f.write(output)
+        return True
+    return False
+
+
+def generate_password_list():
+    """Generate password list for hcx-wifi."""
+    if not check_file_exists("apuniq.txt", "Unique AP hashes"):
+        return False
+    
+    print("-- passlst.csv")
+    output = run_hcx_script("hcx-wifi-genpasslst", "apuniq.txt")
+    if output is not None:
+        with open("passlst.csv", "w") as f:
+            f.write(output)
+        return True
+    return False
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Extract data from capture files
+    if not extract_with_hcxpcapngtool(args.directory):
+        sys.exit(1)
+    
+    # Create unique files
+    files_to_process = [
+        ("essid.txt", "essid_uniq.txt", "ESSID"),
+        ("probeonly.txt", "probeonly_uniq.txt", "Probe-only"),
+        ("identity.txt", "identity_uniq.txt", "Identity"),
+        ("username.txt", "username_uniq.txt", "Username"),
+        ("deviceinfo.txt", "deviceinfo_uniq.txt", "Device info"),
+        ("all.txt", "all_uniq.txt", "All hashes"),
+    ]
+    
+    for input_file, output_file, description in files_to_process:
+        create_unique_file(input_file, output_file, description)
+    
+    # Process unique hashes
+    if not process_unique_hashes():
+        print("Warning: Failed to process unique hashes", file=sys.stderr)
+    
+    # Process hashcat results
+    process_hashcat_results()
+    
+    # Process left and cracked
+    if not process_left_and_cracked():
+        print("Warning: Failed to process left/cracked hashes", file=sys.stderr)
+    
+    # Process against main database
+    process_maindb()
+    
+    # Generate password list
+    if not generate_password_list():
+        print("Warning: Failed to generate password list", file=sys.stderr)
+    
+    print("\n-- Done!")
+
+
+if __name__ == "__main__":
+    main()
