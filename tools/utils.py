@@ -58,3 +58,30 @@ def load_config_file(filepath):
 def get_script_dir():
     """Get the directory where the script is located."""
     return os.path.dirname(os.path.abspath(__file__))
+
+
+def load_wordlist_set(wordlist_paths, min_length=4):
+    """Load words from multiple wordlist files into a set."""
+    word_set = set()
+    for filepath in wordlist_paths:
+        if not os.path.exists(filepath):
+            continue
+        with open(filepath, 'r') as f:
+            for line in f:
+                word = line.strip().lower()
+                if len(word) >= min_length:
+                    word_set.add(word)
+    return word_set
+
+
+def write_file_with_permissions(filepath, content, mode=0o755):
+    """Write content to a file and set its permissions."""
+    with open(filepath, 'w') as f:
+        f.write(content)
+    os.chmod(filepath, mode)
+
+
+def read_lines_from_file(filepath):
+    """Read and return non-empty lines from a file."""
+    with open(filepath, 'r') as f:
+        return [line.strip() for line in f if line.strip()]

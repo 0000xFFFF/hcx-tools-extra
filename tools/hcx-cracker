@@ -3,47 +3,35 @@
 import os
 import re
 import argparse
-from utils import rslatin_check, rslatin_replace, wordlst2args, load_config_file, get_script_dir, parse_hash_line
+from utils import (
+    rslatin_check, rslatin_replace, wordlst2args, 
+    load_config_file, get_script_dir, parse_hash_line,
+    load_wordlist_set, write_file_with_permissions, read_lines_from_file
+)
 
 # Constants
 SH_HEADER = "#!/bin/sh -x\n"
 DETECT_WORDLISTS_MIN_STRING_LEN = 4
+BLACKLIST_FILE = 'hcx-cracker-blacklist.txt'
+WORDLIST_FILE = 'hcx-cracker-wordlist.txt'
 
 
 def load_blacklist():
     """Load blacklist items from config file."""
-    config_path = os.path.join(get_script_dir(), 'hcx-cracker-blacklist.txt')
+    config_path = os.path.join(get_script_dir(), BLACKLIST_FILE)
     return set(load_config_file(config_path))
 
 
 def load_detect_wordlists():
     """Load detect wordlist paths from config file."""
-    config_path = os.path.join(get_script_dir(), 'hcx-cracker-wordlist.txt')
+    config_path = os.path.join(get_script_dir(), WORDLIST_FILE)
     return load_config_file(config_path)
-
-
-def build_detect_set(wordlist_paths):
-    """Build a set of words from multiple wordlist files for detection."""
-    detect_set = set()
-    for f in wordlist_paths:
-        if not os.path.exists(f):
-            continue
-        with open(f, 'r') as file:
-            for line in file:
-                l = line.strip().lower()
-                if len(l) >= DETECT_WORDLISTS_MIN_STRING_LEN:
-                    detect_set.add(l)
-    return detect_set
 
 
 def detect_words_in_essid(essid, detect_set):
     """Detect words from detect_set that appear in the ESSID."""
     essid_lower = essid.lower()
-    detected = set()
-    for word in detect_set:
-        if word in essid_lower:
-            detected.add(word)
-    return list(detected)
+    return [word for word in detect_set if word in essid_lower]
 
 
 def is_blacklisted(essid, blacklist):
@@ -55,30 +43,34 @@ def is_blacklisted(essid, blacklist):
     return False
 
 
-def essid2wordlst(input_essid, blacklist, detect_set=None, use_blacklist=False, use_detect=False):
-    """Generate wordlist variations from an ESSID."""
-    essid = input_essid.replace("\"", "")  # remove " so it doesn't break ./run script
-    
+def extract_before_number(s):
+    """Extract substring before first digit."""
+    for i, c in enumerate(s):
+        if c.isdigit():
+            return s[:i]
+    return ""
+
+
+def re_split_essid(word):
+    """Split ESSID by various delimiters."""
+    return re.split(r"&|'s\s|\s|_|-", word)
+
+
+def split_camel_case(text):
+    """Split camelCase or PascalCase string."""
+    return re.split(r'(?<!^)(?=[A-Z])', text)
+
+
+def generate_word_variations(essid, detect_set=None, use_detect=False):
+    """Generate all word variations from an ESSID."""
     wordlst_set = set()
     wordlst = []
-
-    if rslatin_check(essid):
-        essid = rslatin_replace(essid)
-
-    if use_blacklist and is_blacklisted(essid, blacklist):
-        return []
 
     def add_unique(input_word):
         word = input_word.strip()
         if len(word) > 1 and word and word not in wordlst_set:
             wordlst_set.add(word)
             wordlst.append(word)
-
-    def extract_before_number(s):
-        for i, c in enumerate(s):
-            if c.isdigit():
-                return s[:i]
-        return ""
 
     def add_variations(word):
         add_unique(word)
@@ -92,14 +84,9 @@ def essid2wordlst(input_essid, blacklist, detect_set=None, use_blacklist=False, 
         add_variations("".join(words))
         add_variations("".join(reversed(words)))
 
-    def re_splitting(word):
-        return re.split(r"&|'s\s|\s|_|-", word)
-
-    def split_camel_case(title):
-        return re.split(r'(?<!^)(?=[A-Z])', title)
-
+    # Generate variations
     add_variations(essid)
-    add_word_combinations(re_splitting(essid))
+    add_word_combinations(re_split_essid(essid))
     add_word_combinations(split_camel_case(essid))
     
     if use_detect and detect_set:
@@ -107,6 +94,19 @@ def essid2wordlst(input_essid, blacklist, detect_set=None, use_blacklist=False, 
         add_word_combinations(detected_words)
 
     return wordlst
+
+
+def essid2wordlst(input_essid, blacklist, detect_set=None, use_blacklist=False, use_detect=False):
+    """Generate wordlist variations from an ESSID."""
+    essid = input_essid.replace("\"", "")
+
+    if rslatin_check(essid):
+        essid = rslatin_replace(essid)
+
+    if use_blacklist and is_blacklisted(essid, blacklist):
+        return []
+
+    return generate_word_variations(essid, detect_set, use_detect)
 
 
 def process_hashes(hashes_lines, args, blacklist, detect_set=None):
@@ -171,76 +171,88 @@ def generate_hash_files(items):
     prev_file_1 = ""
     prev_file_2 = ""
     files = []
+    gen_commands = [SH_HEADER]
 
-    with open("gen.sh", 'w') as f_gen:
-        f_gen.write(SH_HEADER)
-        
-        for num, item in enumerate(items, 1):
-            file_1 = f"hash{num:03}.txt"
-            file_2 = f"hash{num:03}.lst"
-            dogen = True
+    for num, item in enumerate(items, 1):
+        file_1 = f"hash{num:03}.txt"
+        file_2 = f"hash{num:03}.lst"
+        dogen = True
 
-            if prev_essid and prev_essid == item[5]:
-                file_1 = prev_file_1
-                file_2 = prev_file_2
-                with open(file_1, 'a+') as f1:
-                    f1.write(f"{item[0]}\n")
-                dogen = False
-            else:
-                with open(file_1, 'w') as f1:
-                    f1.write(f"{item[0]}\n")
+        if prev_essid and prev_essid == item[5]:
+            file_1 = prev_file_1
+            file_2 = prev_file_2
+            with open(file_1, 'a') as f1:
+                f1.write(f"{item[0]}\n")
+            dogen = False
+        else:
+            with open(file_1, 'w') as f1:
+                f1.write(f"{item[0]}\n")
 
-            if dogen:
-                command = f"hcx-fastgenlst -lut123 {item[6]} -o \"{file_2}\" # {item[5]}\n"
-                f_gen.write(command)
-                print(f"| {command}", end="")
-                files.append([file_1, file_2, item])
+        if dogen:
+            command = f"hcx-fastgenlst -lut123 {item[6]} -o \"{file_2}\" # {item[5]}\n"
+            gen_commands.append(command)
+            print(f"| {command}", end="")
+            files.append([file_1, file_2, item])
 
-            prev_essid = item[5]
-            prev_file_1 = file_1
-            prev_file_2 = file_2
+        prev_essid = item[5]
+        prev_file_1 = file_1
+        prev_file_2 = file_2
 
+    write_file_with_permissions("gen.sh", "".join(gen_commands))
     return files
 
 
-def write_shortlists(f_run, hashes_filename):
-    """Write shortlist hashcat commands."""
-    for i in range(1, 14):
-        line = f"hashcat --quiet -m 22000 \"{hashes_filename}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt\" -w 4 --session \"part{i}\" 2>/dev/null\n"
-        f_run.write(line)
-        print(f"| {line}", end="")
-
-
-def write_longlists(f_run, hashes_filename):
-    """Write longlist hashcat commands."""
-    for i in range(14, 25):
-        line = f"hashcat --quiet -m 22000 \"{hashes_filename}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt\" -w 4 --session \"part{i}\" 2>/dev/null\n"
-        f_run.write(line)
-        print(f"| {line}", end="")
+def build_hashcat_command(hashes_filename, wordlist_path, part_num, hash_file=None, session=None, comment=""):
+    """Build a hashcat command string."""
+    target = hash_file if hash_file else f'"{hashes_filename}"'
+    sess = session if session else f'"part{part_num}"'
+    cmd = f"hashcat --quiet -m 22000 {target} -a 0 {wordlist_path} -w 4 --session {sess} 2>/dev/null"
+    if comment:
+        cmd += f" # {comment}"
+    return cmd + "\n"
 
 
 def generate_run_script(files, args):
     """Generate the run.sh script with hashcat commands."""
     print(f"\n+--> run.sh")
     
-    with open("run.sh", 'w') as f_run:
-        f_run.write(SH_HEADER)
-        print(f"| {SH_HEADER}", end="")
+    run_commands = [SH_HEADER]
+    print(f"| {SH_HEADER}", end="")
 
-        if args.lists:
-            write_shortlists(f_run, args.hashes)
+    # Shortlists
+    if args.lists:
+        for i in range(1, 14):
+            wordlist = f'"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt"'
+            cmd = build_hashcat_command(args.hashes, wordlist, i)
+            run_commands.append(cmd)
+            print(f"| {cmd}", end="")
 
-        for file_1, file_2, item in files:
-            line = f"hashcat --quiet -m 22000 {file_1} -a 0 {file_2} -w 4 --session \"{item[2]}\" 2>/dev/null # {item[3]} {item[5]}\n"
-            f_run.write(line)
-            print(f"| {line}", end="")
+    # Generated wordlists
+    for file_1, file_2, item in files:
+        cmd = build_hashcat_command(
+            args.hashes, 
+            file_2, 
+            None, 
+            hash_file=file_1, 
+            session=f'"{item[2]}"',
+            comment=f"{item[3]} {item[5]}"
+        )
+        run_commands.append(cmd)
+        print(f"| {cmd}", end="")
 
-        if args.lists:
-            write_longlists(f_run, args.hashes)
+    # Longlists
+    if args.lists:
+        for i in range(14, 25):
+            wordlist = f'"/home/user/.vip/lists/wlst/commonfirst/parts/hgl_part{i}.txt"'
+            cmd = build_hashcat_command(args.hashes, wordlist, i)
+            run_commands.append(cmd)
+            print(f"| {cmd}", end="")
+
+    write_file_with_permissions("run.sh", "".join(run_commands))
 
 
-def main():
-    """Main execution function."""
+def parse_arguments():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description='Generate hashcat scripts and wordlists from ESSIDs for cracking. '
                     'After running hcx-cracker... Run ./gen.sh to generate wordlists '
@@ -255,7 +267,12 @@ def main():
     parser.add_argument('-l', '--lists', action='store_true', 
                         help="Add wordlists to ./run.sh")
     parser.add_argument('hashes', help="Path to hashes input file")
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
 
     # Load configuration
     blacklist = load_blacklist()
@@ -263,11 +280,10 @@ def main():
     
     if args.detect:
         wordlist_paths = load_detect_wordlists()
-        detect_set = build_detect_set(wordlist_paths)
+        detect_set = load_wordlist_set(wordlist_paths, DETECT_WORDLISTS_MIN_STRING_LEN)
 
     # Read hashes file
-    with open(args.hashes, 'r') as file:
-        hashes_lines = file.read().splitlines()
+    hashes_lines = read_lines_from_file(args.hashes)
 
     # Process hashes
     items, skipped = process_hashes(hashes_lines, args, blacklist, detect_set)
@@ -276,10 +292,6 @@ def main():
     print(f"\n+--> gen.sh")
     files = generate_hash_files(items)
     generate_run_script(files, args)
-
-    # Set +x permission
-    os.chmod("gen.sh", 0o755)
-    os.chmod("run.sh", 0o755)
 
     # Summary
     print()
