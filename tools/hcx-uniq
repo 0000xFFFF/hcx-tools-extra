@@ -1,30 +1,57 @@
 #!/usr/bin/env python3
 
 import sys
+import argparse
+from utils import parse_hash_line, read_lines_from_file
 
-if len(sys.argv) < 2:
-    print("ABOUT: print uniq hashes by bssid+essid")
-    print("USAGE: " + sys.argv[0] + " <hashesFile>")
-    exit()
 
-with open(sys.argv[1], 'r') as file1:
-    lines = [line.strip() for line in file1.readlines()]
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Print unique hashes by BSSID+ESSID combination'
+    )
+    parser.add_argument('hashes', help='Path to hashes input file')
+    return parser.parse_args()
 
-def hex2str(hex_string):
-    try: return bytes.fromhex(hex_string).decode('utf-8')
-    except ValueError: return "HEX ERROR"
 
-def line2info(line):
-    split = line.split("*")
-    hash_id = split[2]
-    hash_id, bssid, mac, essid = split[2], split[3], split[4], hex2str(split[5])
-    return hash_id, bssid, mac, essid
+def get_unique_key(parsed):
+    """Generate a unique key from BSSID and ESSID."""
+    return f"{parsed['essid']}{parsed['bssid']}{parsed['essid']}{parsed['bssid']}"
 
-hashes_dict = {}
-for line in lines:
-    if not line: continue
-    hash_id, bssid, mac, essid = line2info(line)
-    key = f"{essid}{bssid}{essid}{bssid}"
-    if key not in hashes_dict:
-        hashes_dict[key] = line
+
+def filter_unique_hashes(lines):
+    """Filter and return unique hash lines based on BSSID+ESSID."""
+    hashes_dict = {}
+    unique_lines = []
+    
+    for line in lines:
+        if not line:
+            continue
+        
+        parsed = parse_hash_line(line)
+        if not parsed:
+            continue
+        
+        key = get_unique_key(parsed)
+        if key not in hashes_dict:
+            hashes_dict[key] = line
+            unique_lines.append(line)
+    
+    return unique_lines
+
+
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Read and process hashes
+    lines = read_lines_from_file(args.hashes)
+    unique_hashes = filter_unique_hashes(lines)
+    
+    # Print unique hashes
+    for line in unique_hashes:
         print(line)
+
+
+if __name__ == "__main__":
+    main()
