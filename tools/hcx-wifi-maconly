@@ -1,97 +1,168 @@
 #!/usr/bin/env python3
 
+import os
 import sys
-from scapy.all import *
-
-fetch_vendor = 1
-
-if fetch_vendor:
-    ouifile_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "mac2ven.lst")
-
-    try:
-        ouifile = open(ouifile_path, 'r')
-        ouifile_lines = ouifile.readlines()
-        ouifile.close()
-    except FileNotFoundError: ouifile_lines = []
-
-    mac2ven_cache = [] # this makes if way faster
-    def mac2ven(mac):
-        if len(ouifile_lines) == 0: return ""
-        mac2check = mac.replace(":", "").replace("-", "").upper()[0:6]
-        for i in mac2ven_cache:
-            if mac2check == i[0]: return i[1]
-        for y_ in ouifile_lines:
-            y = y_.replace("\n", "")
-            split = y.split("\t")
-            split_l = len(split)
-            oui_mac = ""
-            oui_ven = ""
-            if split_l >= 1: oui_mac = split[0]
-            if split_l >= 2: oui_ven = split[1]
-            if mac2check == oui_mac:
-                mac2ven_cache.append([oui_mac, oui_ven])
-                return oui_ven
-        return ""
-else:
-    def mac2ven(mac):
-        return ""
-
-channels = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ]
-
-def hopch(i):
-    os.system(f"sudo iw dev '{interface}' set channel {i}")
-
-running = True
-ch = 1
+import time
+import subprocess
+import argparse
+from threading import Thread
+from scapy.layers.dot11 import Dot11, Dot11Beacon
+from scapy.sendrecv import sniff
+from utils import load_mac2vendor_cache, mac2vendor_from_cache
 
 
-def thread_hopch():
-    global ch
-    global running
-    while running:
-        for i in channels:
-            ch = i
-            hopch(i)
-            time.sleep(1)
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Show nearby MAC addresses with vendor information using WiFi monitor mode'
+    )
+    parser.add_argument('interface', help='WiFi interface in monitor mode')
+    parser.add_argument('-c', '--channels', nargs='+', type=int,
+                        default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                        help='Channels to hop (default: 1-11)')
+    parser.add_argument('--no-hop', action='store_true',
+                        help='Disable channel hopping')
+    return parser.parse_args()
 
-macs = []
-def macs_add(prepend, mac):
-    if not mac in macs:
-        print(prepend,mac,mac2ven(mac))
-        macs.append(mac)
-def callback_macs(packet):
-    prepend = " "
-    if packet.haslayer(Dot11Beacon): prepend = "B"
-    try:    addr1 = str(packet.addr1).upper()
-    except: addr1 = ""
-    try:    addr2 = str(packet.addr2).upper()
-    except: addr2 = ""
-    try:    addr3 = str(packet.addr3).upper()
-    except: addr4 = ""
-
-    macs_add(prepend,addr1)
-    macs_add(prepend,addr2)
-    macs_add(prepend,addr3)
 
 def is_root():
+    """Check if running as root."""
     return os.geteuid() == 0
 
-if __name__ == "__main__":
 
-    argv_len = len(sys.argv)
+class MacScanner:
+    """WiFi MAC address scanner with vendor lookup."""
+    
+    def __init__(self, interface, channels, enable_hopping=True):
+        self.interface = interface
+        self.channels = channels
+        self.enable_hopping = enable_hopping
+        self.running = True
+        self.current_channel = 1
+        self.seen_macs = set()
+        self.vendor_cache = load_mac2vendor_cache()
+        self.hop_thread = None
+    
+    def hop_channel(self, channel):
+        """Set WiFi interface to specific channel."""
+        try:
+            subprocess.run(f"sudo iw dev '{self.interface}' set channel {channel}", 
+                           shell=True,
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           check=True)
+        except Exception as e:
+            print(f"Error setting channel {channel}: {e}", file=sys.stderr)
+    
+    def channel_hopping_thread(self):
+        """Thread function for channel hopping."""
+        while self.running:
+            for channel in self.channels:
+                if not self.running:
+                    break
+                self.current_channel = channel
+                self.hop_channel(channel)
+                time.sleep(1)
+    
+    def start_channel_hopping(self):
+        """Start channel hopping in a separate thread."""
+        if self.enable_hopping:
+            self.hop_thread = Thread(target=self.channel_hopping_thread)
+            self.hop_thread.daemon = True
+            self.hop_thread.start()
+    
+    def stop(self):
+        """Stop the scanner."""
+        self.running = False
+        if self.hop_thread:
+            self.hop_thread.join(timeout=2)
+    
+    def add_mac(self, mac, is_beacon=False):
+        """Add MAC address and print with vendor info if new."""
+        if not mac or mac in self.seen_macs:
+            return
+        
+        # Filter out broadcast MACs
+        if mac.upper() in ["FF:FF:FF:FF:FF:FF", "00:00:00:00:00:00"]:
+            return
+        
+        self.seen_macs.add(mac)
+        
+        vendor = mac2vendor_from_cache(mac, self.vendor_cache)
+        prefix = "B" if is_beacon else " "
+        
+        print(f"{prefix} {mac} {vendor}")
+    
+    def packet_handler(self, packet):
+        """Handle captured WiFi packets."""
+        if not packet.haslayer(Dot11):
+            return
+        
+        is_beacon = packet.haslayer(Dot11Beacon)
+        
+        # Extract MAC addresses from packet
+        try:
+            addr1 = packet.addr1
+            if addr1:
+                self.add_mac(addr1.upper(), is_beacon)
+        except AttributeError:
+            pass
+        
+        try:
+            addr2 = packet.addr2
+            if addr2:
+                self.add_mac(addr2.upper(), is_beacon)
+        except AttributeError:
+            pass
+        
+        try:
+            addr3 = packet.addr3
+            if addr3:
+                self.add_mac(addr3.upper(), is_beacon)
+        except AttributeError:
+            pass
+    
+    def start_sniffing(self):
+        """Start sniffing WiFi packets."""
+        try:
+            print(f"Starting MAC scanner on interface {self.interface}")
+            if self.enable_hopping:
+                print(f"Channel hopping enabled: {self.channels}")
+            print("Scanning for MAC addresses... (Ctrl+C to stop)")
+            print()
+            
+            sniff(prn=self.packet_handler, iface=self.interface, store=False)
+            
+        except KeyboardInterrupt:
+            print("\nStopping scanner...")
+            self.stop()
+        except Exception as e:
+            print(f"Error during sniffing: {e}", file=sys.stderr)
+            self.stop()
 
-    if argv_len < 2:
-        print("ABOUT: uses scapy to show nearby macs")
-        print(f"USAGE: sudo {sys.argv[0]} <interface(mon)>")
-        exit()
 
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Check root privileges
     if not is_root():
-        print("use root.")
-        exit()
+        print("Error: This script requires root privileges", file=sys.stderr)
+        print(f"Usage: sudo {sys.argv[0]} <interface>", file=sys.stderr)
+        return 1
+    
+    # Create and run scanner
+    scanner = MacScanner(
+        args.interface, 
+        args.channels, 
+        enable_hopping=not args.no_hop
+    )
+    
+    scanner.start_channel_hopping()
+    scanner.start_sniffing()
+    
+    return 0
 
-    interface = sys.argv[1]
 
-    th_hop = Thread(target=thread_hopch)
-    th_hop.start()
-
-    sniff(prn=callback_macs, iface=interface)
+if __name__ == "__main__":
+    sys.exit(main())

@@ -139,3 +139,79 @@ def grep_files(search_term, file_pattern):
     except subprocess.SubprocessError as e:
         print(f"Error running grep: {e}", file=sys.stderr)
         return None
+
+
+def mac2vendor(mac_address):
+    """Get vendor information for a MAC address using mac2ven.lst file."""
+    ouifile_path = os.path.join(get_script_dir(), "mac2ven.lst")
+    
+    if not os.path.exists(ouifile_path):
+        return "Unknown"
+    
+    # Normalize MAC address - get first 6 characters (OUI)
+    mac_normalized = mac_address.replace(":", "").replace("-", "").upper()
+    if len(mac_normalized) < 6:
+        return "Invalid MAC"
+    
+    oui = mac_normalized[:6]
+    
+    try:
+        with open(ouifile_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    file_oui = parts[0].strip()
+                    vendor = parts[1].strip()
+                    
+                    if oui == file_oui:
+                        return vendor
+        
+        return "Unknown"
+        
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def load_mac2vendor_cache():
+    """Load mac2vendor mappings into a cache dictionary for faster lookups."""
+    ouifile_path = os.path.join(get_script_dir(), "mac2ven.lst")
+    cache = {}
+    
+    if not os.path.exists(ouifile_path):
+        return cache
+    
+    try:
+        with open(ouifile_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    oui = parts[0].strip()
+                    vendor = parts[1].strip()
+                    cache[oui] = vendor
+        
+    except Exception:
+        pass
+    
+    return cache
+
+
+def mac2vendor_from_cache(mac_address, cache):
+    """Get vendor information using a pre-loaded cache."""
+    if not cache:
+        return "Unknown"
+    
+    # Normalize MAC address - get first 6 characters (OUI)
+    mac_normalized = mac_address.replace(":", "").replace("-", "").upper()
+    if len(mac_normalized) < 6:
+        return "Invalid MAC"
+    
+    oui = mac_normalized[:6]
+    return cache.get(oui, "Unknown")
