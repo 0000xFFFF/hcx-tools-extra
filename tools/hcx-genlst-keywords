@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+import argparse
+
+# Argument parser setup
+parser = argparse.ArgumentParser(description='keywords generator for hcx-fastgenlst')
+parser.add_argument('keywords_input', help="Path to input file (each lines is a keyword or name (more than 2 words))")
+args = parser.parse_args()
+
+with open(args.keywords_input, 'r', encoding='utf-8') as f:
+    keywords_file_lines = f.read().splitlines()
+
+final_keywords_list = list()
+final_keywords_set = set()
+
+def add_keyword(keyword):
+    if keyword not in final_keywords_set:
+        final_keywords_set.add(keyword)
+        final_keywords_list.append(keyword)
+
+for line in keywords_file_lines:
+    words = line.split()
+
+    for word in words:
+        add_keyword(word)
+
+    add_keyword("".join(words))
+    add_keyword("".join(reversed(words)))
+
+
+for i in final_keywords_list:
+    print(i)
