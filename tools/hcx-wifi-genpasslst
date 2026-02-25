@@ -2,56 +2,86 @@
 
 import sys
 import subprocess
+import argparse
+from utils import parse_hash_line, read_lines_from_file
 
-if len(sys.argv) < 2:
-    print("ABOUT: generate password.csv for hcx-wifi")
-    print("USAGE: " + sys.argv[0] + " <hash(es)File> > wifipasslst.csv")
-    exit()
 
-def hex2str(hex_string):
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Generate password.csv for hcx-wifi from cracked hashes'
+    )
+    parser.add_argument('hashes', help='Path to hashes input file')
+    return parser.parse_args()
+
+
+def get_cracked_passwords(hashes_file_path):
+    """Run hashcat --show and return a dictionary of hash_id to password."""
+    hashcat_items = {}
     try:
-        return bytes.fromhex(hex_string).decode('utf-8')
-    except ValueError:
-        return "HEX ERROR"
+        result = subprocess.run(
+            ['hashcat', '-m', '22000', '--show', hashes_file_path],
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT, 
+            text=True
+        )
+        for line in result.stdout.splitlines():
+            if not line:
+                continue
+            clms = line.split(":")
+            if len(clms) >= 5:
+                hashcat_items[clms[0]] = clms[4]
+    except subprocess.SubprocessError as e:
+        print(f"Error running hashcat: {e}", file=sys.stderr)
+        sys.exit(1)
+    
+    return hashcat_items
 
-# Open and read the hash file
-hashes_file_path = sys.argv[1]
-try:
-    with open(hashes_file_path, 'r') as file:
-        hashes_file_lines = file.readlines()
-except FileNotFoundError:
-    print(f"Error: File '{hashes_file_path}' not found.")
-    sys.exit(1)
 
-# Run hashcat and parse output
-hashcat_items = {}
-try:
-    result = subprocess.run(['hashcat', '-m', '22000', '--show', hashes_file_path],
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    for line in result.stdout.splitlines():
+def format_bssid(bssid):
+    """Format BSSID to uppercase."""
+    return bssid.upper()
+
+
+def generate_wifi_password_list(lines, cracked_passwords):
+    """Generate WiFi password list in CSV format."""
+    results = []
+    
+    for line in lines:
         if not line:
             continue
-        clms = line.split(":")
-        if len(clms) >= 5:
-            hashcat_items[clms[0]] = clms[4]
-except subprocess.SubprocessError as e:
-    print(f"Error running hashcat: {e}")
-    sys.exit(1)
+        
+        parsed = parse_hash_line(line)
+        if not parsed:
+            print("Invalid format", file=sys.stderr)
+            continue
+        
+        bssid = format_bssid(parsed['bssid'])
+        essid = parsed['essid']
+        passwd = cracked_passwords.get(parsed['hash'], "...")
+        
+        results.append(f"{bssid}|||{essid}|||{passwd}")
+    
+    return results
 
-# Process each hash line and output results
-for line in hashes_file_lines:
-    hash_line = line.strip()
-    if not hash_line:
-        continue
-    split = hash_line.split("*")
-    if len(split) < 6:
-        print("Invalid format")
-        continue
 
-    bssid = split[3].upper()
-    essid = hex2str(split[5])
+def main():
+    """Main execution function."""
+    args = parse_arguments()
+    
+    # Read hash file
+    lines = read_lines_from_file(args.hashes)
+    
+    # Get cracked passwords from hashcat
+    cracked_passwords = get_cracked_passwords(args.hashes)
+    
+    # Generate and print password list
+    password_list = generate_wifi_password_list(lines, cracked_passwords)
+    
+    for entry in password_list:
+        print(entry)
 
-    passwd = hashcat_items.get(split[2], "...")
 
-    print(f"{bssid}|||{essid}|||{passwd}")
+if __name__ == "__main__":
+    main()
 
