@@ -148,6 +148,6 @@ This will just `ln -sfr <tools> /usr/local/bin/.`, some tools depend on each oth
 
 ## Disclaimer
 
-The hcx-scripts are intended for educational purposes only.
+The hcx-tools-extra are intended for educational purposes only.
 The author is not responsible or liable for any misuse, illegal activity, or damage caused by the use of these scripts.
 Users are solely responsible for ensuring compliance with applicable laws and regulations.
