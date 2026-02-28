@@ -9,7 +9,7 @@ from utils import parse_hash_line, read_lines_from_file
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description='Generate password.csv for hcx-wifi or hcx-awifi from cracked hashes'
+        description='Generate password.csv for hcx-wifi or hcx-awifi from cracked hashes (requires: hashcat)'
     )
     parser.add_argument('hashes', help='Path to hashes input file')
     return parser.parse_args()
