@@ -1,8 +1,10 @@
 # hcx-tools-extra (formerly hcx-scripts)
+
 Useful tools for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and passwords.
 Written in C, python, bash.
 
 ## Processing hashes
+
 ```sh
 hcx-info <hashes.txt>    # display a nice table for hashes dumped from hcxpcapngtool
                          # (MACs, BSSIDs, ESSIDs, passwords, vendor info, ...)
@@ -13,11 +15,13 @@ hcx-potfile              # display a nice table for all hashcat passwords in pot
 ```
 
 ### Examples:
+
 ```sh
 hcx-info <hashes.txt>
 ```
+
 ```
-#  TYPE   HASH             MAC AP        MAC CLIENT    ESSID             PASSWORD   
+#  TYPE   HASH             MAC AP        MAC CLIENT    ESSID             PASSWORD
 -  -----  ------...------  ------------  ------------  ----------------  -----------
 1  EAPOL  195bf3...fb1ec7  4c72b90f32c6  f04f7cb94dfd  MyFast-Wifi       test1234     ...
 2  PMKID  d74192...6c0580  78f29ef71570  b8e4dfd8c840  Galaxy Internet   testing123   ...
@@ -25,6 +29,7 @@ hcx-info <hashes.txt>
 ```
 
 ### crack wifi passwords by using their essids
+
 ```sh
 hcx-cracker <hashes.txt> -ab    # generates gen and run scripts
 ./gen.sh                        # generates wordlists by network ESSID for each network
@@ -32,6 +37,7 @@ hcx-cracker <hashes.txt> -ab    # generates gen and run scripts
 ```
 
 ## Capturing hashes with raspberry pi and hcxdumptool
+
 ```sh
 hcx-rpidump                   # small script that starts hcxdumptool when wlan1
                               # device is connected to raspberry pi
@@ -41,8 +47,8 @@ hcx-rpidump-wmenu             # rasberry pi waveshare menu for starting hcxdumpt
 hcx-status                    # print current unique hashes (by bssid) in cwd
 ```
 
-
 ## Generate password wordlists for cracking
+
 Use the newer version: [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
 ```sh
@@ -53,6 +59,7 @@ hcx-genlst-upper8    # generate upper ascii with length 8
 ```
 
 ### Examples:
+
 ```sh
 hcx-genlst -lut123 -s steve
 # will generate a wordlist that has passwords like: steve66, 123Steve, 69STEVE69, ...
@@ -68,17 +75,22 @@ hcx-genlst -lut123 -s steve
 ## Reacon after cracking
 
 ### Nearby
+
 ```sh
 hcx-wifi            # airodump-ng clone written in python that shows you passwords of
                     # nearby networks you have cracked with hashcat
-hcx-wifi-genpasslst # generate password csv list for hcx-wifi
+hcx-wifi-genpasslst # generate password csv list for hcx-wifi or hcx-awifi
 ```
 
+Also check out: [hcx-awifi](https://github.com/0000xFFFF/hcx-awifi) (android app hcx-wifi)
+
 ### Examples:
+
 ```sh
 hcx-wifi-genpasslst <hashes.txt> > <passlst.csv>
 hcx-wifi wlan1mon <passlst.csv>
 ```
+
 ```
 CH  4 | 2024-09-07 22:46:13.812907 | COUNT: 21 | PASS: 10 (3) | SORT BY: ↓ PWR
 > RESUMED CHANNEL HOPPER
@@ -92,16 +104,20 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 ```
 
 ### Bulk GeoLocate BSSIDs in hashes
+
 First install this tool: [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc)
+
 ```sh
 hcx-abgl <hashes.txt> | tee <out.txt> # get bssid locations in bulk from Apple's
                                       # servers and output to stdout & out.txt file
 ```
+
 Use the **leaflet_bulk_geolocator.html** from [abgl](https://github.com/0000xFFFF/apple-bssid-geoloc) to show **out.txt** locations on a map.
 
-
 ## Scripts for maindb.txt
+
 Create a **maindb.txt** file that stores the full path of your file that contains all your hashes.
+
 ```sh
 hcx-cap   # extract info from newly captured cap/pcapng files
 hcx-new   # get newly captured hashes that are not in main hashes db
@@ -111,23 +127,27 @@ hcx-fetch # grep hcx-info for main hashes db
 ## Installation
 
 ### Requirements
-* bash
-* gcc
-* make
-* python (pip: psutil colorama tabulate scapy getkey)
-* [hashcat](https://github.com/hashcat/hashcat)
-* [hcxtools](https://github.com/ZerBea/hcxtools)
-* [hcxdumptool](https://github.com/ZerBea/hcxdumptool)
-* [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
+
+- bash
+- gcc
+- make
+- python (pip: psutil colorama tabulate scapy getkey)
+- [hashcat](https://github.com/hashcat/hashcat)
+- [hcxtools](https://github.com/ZerBea/hcxtools)
+- [hcxdumptool](https://github.com/ZerBea/hcxdumptool)
+- [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
 ### Run before usage
+
 ```sh
 ./build.sh
 ./install.sh
 ```
+
 This will just `ln -sfr <tools> /usr/local/bin/.`, some tools depend on each other...
 
 ## Disclaimer
+
 The hcx-scripts are intended for educational purposes only.
 The author is not responsible or liable for any misuse, illegal activity, or damage caused by the use of these scripts.
 Users are solely responsible for ensuring compliance with applicable laws and regulations.
