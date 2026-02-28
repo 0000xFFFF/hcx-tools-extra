@@ -6,6 +6,7 @@ sudo ln -sfr tools/hcx-fetch /usr/local/bin/.
 sudo ln -sfr tools/hcx-findpass /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst-hswifi /usr/local/bin/.
+sudo ln -sfr tools/hcx-genlst-keywords /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst-hswifi-pre /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst-hswifi-preall /usr/local/bin/.
 sudo ln -sfr tools/hcx-genlst-num8 /usr/local/bin/.

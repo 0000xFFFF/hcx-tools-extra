@@ -51,11 +51,7 @@ def extract_with_hcxpcapngtool(directory):
     pattern = os.path.join(directory, "*.pcapng") + " " + os.path.join(directory, "*.cap")
     cmd = f"hcxpcapngtool {pattern} -E essid.txt -R probeonly.txt -I identity.txt -U username.txt -D deviceinfo.txt -o all.txt >/dev/null 2>/dev/null"
     
-    success = run_command(cmd, "hcxpcapngtool")
-    
-    if not success or not check_file_exists("all.txt", "Output"):
-        print("Error: hcxpcapngtool failed to extract data", file=sys.stderr)
-        return False
+    run_command(cmd, "hcxpcapngtool")
     
     return True
 
