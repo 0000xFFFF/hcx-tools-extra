@@ -1,2 +1,3 @@
 - rewrite hcx-rpidump
 - ??? rewrite hcx-genlst-* scripts???
+- remove ESSID that start with - (just remove the - char from the start of all essids)
